@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="A post-apocalyptic text RPG powered by AI. Survive the wasteland.">
+    <title>Wasteland Drifter</title>
+    <style>
+        body {
+            background-color: #0f0f0f;
+            color: #33ff00;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 0;
+            height: 100vh; /* Full viewport height */
+            overflow: hidden; /* Prevent scrolling the whole page */
+            -webkit-user-select: none; /* Disable text selection for app-feel */
+            user-select: none;
+        }
+        
+        .container {
+            width: 100%;
+            max-width: 500px; /* Optimal mobile width */
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            box-sizing: border-box;
+            background: #000;
+            border-left: 1px solid #1a5c00;
+            border-right: 1px solid #1a5c00;
+        }
+
+        h1 { 
+            text-align: center; 
+            margin: 5px 0 10px 0; 
+            font-size: 22px; 
+            text-shadow: 0 0 5px #33ff00; 
+            flex-shrink: 0;
+        }
+
+        /* SCREENS */
+        .screen { display: none; height: 100%; flex-direction: column; }
+        .active-screen { display: flex; }
+
+        /* MENU */
+        .menu-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+        .menu-btn {
+            width: 80%;
+            padding: 20px;
+            font-size: 18px;
+            background: #000;
+            border: 2px solid #33ff00;
+            color: #33ff00;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-weight: bold;
+        }
+        .menu-btn:hover { background: #33ff00; color: #000; }
+
+        /* CLASS SELECTION */
+        .class-list { flex-grow: 1; overflow-y: auto; }
+        .class-card {
+            border: 1px solid #33ff00;
+            padding: 15px;
+            margin-bottom: 15px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+        .class-card:hover { background: #002200; transform: scale(1.02); }
+        .class-title { font-size: 18px; font-weight: bold; color: #ffff00; margin-bottom: 5px; }
+
+        /* GAME UI */
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            border-bottom: 1px dashed #33ff00;
+            padding-bottom: 8px;
+            font-weight: bold;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+
+        .mission-box {
+            border: 1px solid #ffff00;
+            color: #ffff00;
+            padding: 5px;
+            margin-top: 5px;
+            text-align: center;
+            font-weight: bold;
+            font-size: 12px;
+            flex-shrink: 0;
+        }
+
+        .log-window {
+            flex-grow: 1;
+            overflow-y: auto;
+            border: 1px solid #1a5c00;
+            padding: 10px;
+            margin: 10px 0;
+            background-color: #050f05;
+            font-size: 14px;
+            line-height: 1.4;
+        }
+        .log-entry { margin-bottom: 8px; border-bottom: 1px dotted #0f2b00; padding-bottom: 4px; }
+        .highlight { color: #fff; font-weight: bold; }
+        .bad { color: #ff3333; }
+        .good { color: #ffff00; }
+        .win-text { color: #00ffff; font-weight: bold; font-size: 1.2em; text-align: center; display: block; margin-top: 10px;}
+
+        /* CONTROLS */
+        .controls {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        button {
+            background: #000;
+            color: #33ff00;
+            border: 1px solid #33ff00;
+            padding: 12px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            text-transform: uppercase;
+            font-size: 14px;
+            touch-action: manipulation; /* Improves mobile tap response */
+        }
+        button:active { background: #33ff00; color: #000; }
+        button:disabled { border-color: #555; color: #555; cursor: not-allowed; opacity: 0.5; }
+
+        #btn-rescue {
+            grid-column: span 2;
+            background: #003300;
+            border-color: #ffff00;
+            color: #ffff00;
+            display: none; 
+        }
+
+        .shop-section {
+            border-top: 2px solid #33ff00;
+            padding-top: 8px;
+            margin-top: 8px;
+            flex-shrink: 0;
+        }
+        .shop-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+        .inventory { 
+            margin-top: 8px; 
+            padding-top: 5px; 
+            font-size: 12px; 
+            flex-shrink: 0; 
+            border-top: 1px dotted #1a5c00;
+        }
+
+        .top-buttons {
+            display: flex;
+            justify-content: flex-end;
+            gap: 10px;
+            margin-bottom: 5px;
+        }
+        .small-btn { padding: 5px 10px; font-size: 12px; width: auto; border-color: #555; color: #888; }
+        
+        .donate-link {
+            text-align: center;
+            font-size: 12px;
+            margin-top: 10px;
+            padding-bottom: 10px;
+            flex-shrink: 0;
+        }
+        .donate-link a { color: #555; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        
+        <div id="screen-menu" class="screen active-screen">
+            <h1>WASTELAND DRIFTER</h1>
+            <div class="menu-content">
+                <button class="menu-btn" onclick="showClassSelection()">NEW GAME</button>
+                <button class="menu-btn" id="btn-load-game" onclick="loadGame()" style="display:none;">CONTINUE</button>
+            </div>
+            <div class="donate-link">
+                <a href="#" target="_blank">Support the Developer</a>
+            </div>
+        </div>
+
+        <div id="screen-class" class="screen">
+            <h1>SELECT CLASS</h1>
+            <div class="class-list">
+                <div class="class-card" onclick="startGame('Soldier')">
+                    <div class="class-title">THE SOLDIER</div>
+                    <div>HP: 120 (High)</div>
+                    <div style="font-size:12px; color:#aaa;">Bonus: Takes less damage.</div>
+                </div>
+
+                <div class="class-card" onclick="startGame('Scout')">
+                    <div class="class-title">THE SCOUT</div>
+                    <div>HP: 80 (Low)</div>
+                    <div style="font-size:12px; color:#aaa;">Bonus: Finds Radio Parts faster.</div>
+                </div>
+            </div>
+            <button class="menu-btn" onclick="showMenu()" style="margin-top:10px;">BACK</button>
+        </div>
+
+        <div id="screen-game" class="screen">
+            <div class="top-buttons">
+                <button class="small-btn" onclick="saveGame()">SAVE</button>
+                <button class="small-btn" onclick="quitGame()">MENU</button>
+            </div>
+
+            <div class="stats-bar">
+                <span id="hp">HP: 100</span>
+                <span id="hunger">HNG: 0%</span>
+                <span id="days">DAY: 1</span>
+            </div>
+
+            <div class="mission-box" id="mission-display">
+                MISSION: Fix the Radio<br>PARTS: 0 / 3
+            </div>
+
+            <div class="log-window" id="log"></div>
+
+            <div class="controls">
+                <button onclick="scavenge()" id="btn-scavenge">Scavenge</button>
+                <button onclick="rest()" id="btn-rest">Rest</button>
+                <button onclick="eat()" id="btn-eat">Eat</button>
+                <button onclick="meds()" id="btn-meds">Meds</button>
+                <button onclick="callRescue()" id="btn-rescue">TRANSMIT SOS</button>
+            </div>
+
+            <div class="shop-section">
+                <div style="text-align:center; font-size:10px; margin-bottom:2px; color:#666;">TRADING POST</div>
+                <div class="shop-controls">
+                    <button onclick="buyFood()">Food (3 Scrap)</button>
+                    <button onclick="buyMeds()">Meds (5 Scrap)</button>
+                </div>
+            </div>
+
+            <div class="inventory">
+                <span id="inv-display">Empty</span>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        // GAME STATE
+        let hp = 100, maxHp = 100, hunger = 0, days = 1, gameOver = false, playerClass = "Survivor";
+        let inventory = { food: 2, meds: 1, scrap: 0, radioParts: 0 };
+        const logEl = document.getElementById('log');
+
+        window.onload = function() {
+            if (localStorage.getItem('wasteland_save')) {
+                document.getElementById('btn-load-game').style.display = 'block';
+            }
+        };
+
+        function showMenu() { switchScreen('screen-menu'); }
+        function showClassSelection() { switchScreen('screen-class'); }
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
+            document.getElementById(id).classList.add('active-screen');
+        }
+
+        function saveGame() {
+            if(gameOver) return;
+            const data = { hp, maxHp, hunger, days, inventory, playerClass, logHtml: logEl.innerHTML };
+            localStorage.setItem('wasteland_save', JSON.stringify(data));
+            alert("Saved.");
+        }
+
+        function loadGame() {
+            const save = localStorage.getItem('wasteland_save');
+            if (!save) return;
+            const data = JSON.parse(save);
+            hp = data.hp; maxHp = data.maxHp; hunger = data.hunger; days = data.days; inventory = data.inventory; playerClass = data.playerClass;
+            switchScreen('screen-game');
+            logEl.innerHTML = data.logHtml;
+            log("Game Loaded.", "highlight");
+            updateUI();
+        }
+
+        function quitGame() {
+            if(confirm("Exit to menu?")) showMenu();
+        }
+
+        function startGame(cls) {
+            playerClass = cls; days = 1; hunger = 0; gameOver = false;
+            inventory = { food: 2, meds: 1, scrap: 0, radioParts: 0 };
+            logEl.innerHTML = "";
+            
+            if (cls === 'Soldier') { maxHp = 120; hp = 120; inventory.meds = 2; } 
+            else { maxHp = 80; hp = 80; inventory.food = 4; }
+
+            switchScreen('screen-game');
+            log(`Welcome, ${cls}. Find 3 Radio Parts.`, "highlight");
+            updateUI();
+        }
+
+        function updateUI() {
+            document.getElementById('hp').innerText = `HP:${hp}/${maxHp}`;
+            document.getElementById('hunger').innerText = `HNG:${hunger}%`;
+            document.getElementById('days').innerText = `DAY:${days}`;
+            
+            document.getElementById('mission-display').innerHTML = `MISSION: Fix the Radio<br>PARTS: ${inventory.radioParts} / 3`;
+            if (inventory.radioParts >= 3) {
+                document.getElementById('mission-display').innerHTML = "RADIO REPAIRED<br>READY TO TRANSMIT";
+                document.getElementById('mission-display').style.color = "#00ff00";
+                document.getElementById('mission-display').style.borderColor = "#00ff00";
+            }
+
+            let inv = [];
+            inv.push(`Food:${inventory.food}`);
+            inv.push(`Meds:${inventory.meds}`);
+            inv.push(`Scrap:${inventory.scrap}`);
+            inv.push(`Parts:${inventory.radioParts}`);
+            document.getElementById('inv-display').innerText = inv.join(' | ');
+
+            if (inventory.radioParts >= 3 && !gameOver) document.getElementById('btn-rescue').style.display = 'block';
+            else document.getElementById('btn-rescue').style.display = 'none';
+
+            if ((hp <= 0 || hunger >= 100) && !gameOver) {
+                gameOver = true; hp = 0;
+                log("You died.", "bad");
+                log(`GAME OVER. Days: ${days}`, "highlight");
+                disableButtons();
+            }
+        }
+
+        function log(msg, type="") {
+            const div = document.createElement('div');
+            div.className = `log-entry ${type}`;
+            div.innerText = `> ${msg}`;
+            logEl.appendChild(div);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function rollDice(n) { return Math.floor(Math.random() * n) + 1; }
+        
+        function disableButtons() {
+            ['btn-scavenge','btn-rest','btn-eat','btn-meds'].forEach(id => document.getElementById(id).disabled = true);
+        }
+
+        function scavenge() {
+            if (gameOver) return;
+            days++; hunger += 10;
+            let roll = rollDice(20), enemyChance = rollDice(100), partChance = rollDice(100);
+            
+            if (playerClass === 'Scout') partChance -= 15; 
+
+            if (enemyChance < 30) {
+                let dmg = rollDice(15);
+                if (playerClass === 'Soldier') dmg = Math.max(0, dmg - 3);
+                hp -= dmg;
+                log(`Enemy! Took ${dmg} dmg.`, "bad");
+                if (hp > 0) { inventory.scrap += 2; log("Won fight. +2 Scrap.", "good"); }
+            } else {
+                if (roll === 1) {
+                    let dmg = rollDice(10); hp -= dmg; log(`Trap! Took ${dmg} dmg.`, "bad");
+                } else if (roll < 8) {
+                    log("Found nothing.");
+                } else {
+                    if (partChance <= 10 && inventory.radioParts < 3) {
+                        inventory.radioParts++; log("!!! FOUND RADIO PART !!!", "highlight");
+                    } else if (roll < 15) {
+                        let f = Math.random() > 0.5 ? "food" : "scrap";
+                        inventory[f]++; log(`Found 1 ${f}.`, "good");
+                    } else {
+                        inventory.scrap += 4; log("Found pile of Scrap!", "highlight");
+                    }
+                }
+            }
+            updateUI();
+        }
+
+        function rest() { if(gameOver)return; days++; hp = Math.min(hp+15,maxHp); hunger+=15; log("Rested."); updateUI(); }
+        function eat() { if(gameOver)return; if(inventory.food>0){inventory.food--; hunger=Math.max(0,hunger-30); hp=Math.min(hp+5,maxHp); log("Ate food.");} else log("No food!","bad"); updateUI(); }
+        function meds() { if(gameOver)return; if(inventory.meds>0){inventory.meds--; hp=Math.min(hp+50,maxHp); log("Used Meds.");} else log("No meds!","bad"); updateUI(); }
+        
+        function buyFood() { if(inventory.scrap>=3){inventory.scrap-=3; inventory.food++; log("Bought Food.","good"); updateUI();} else log("Need 3 Scrap.","bad"); }
+        function buyMeds() { if(inventory.scrap>=5){inventory.scrap-=5; inventory.meds++; log("Bought Meds.","good"); updateUI();} else log("Need 5 Scrap.","bad"); }
+
+        function callRescue() {
+            if(gameOver) return;
+            gameOver = true;
+            log("SIGNAL SENT. CHOPPER INBOUND.", "win-text");
+            log("YOU WIN!", "win-text");
+            document.querySelector('.container').style.borderColor = "#00ffff";
+            disableButtons();
+        }
+    </script>
+</body>
+</html>
