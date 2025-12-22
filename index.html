@@ -3,403 +3,350 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <meta name="description" content="A post-apocalyptic text RPG powered by AI. Survive the wasteland.">
-    <title>Wasteland Drifter</title>
+    <title>Wasteland Drifter Online</title>
+    <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
-        body {
-            background-color: #0f0f0f;
-            color: #33ff00;
-            font-family: 'Courier New', Courier, monospace;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin: 0;
-            padding: 0;
-            height: 100vh; /* Full viewport height */
-            overflow: hidden; /* Prevent scrolling the whole page */
-            -webkit-user-select: none; /* Disable text selection for app-feel */
-            user-select: none;
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+
+        :root {
+            --bg: #0d0d0d;
+            --term: #33ff00; /* Terminal Green */
+            --alert: #ff3333;
+            --warn: #ffcc00;
+            --panel: #1a1a1a;
         }
+
+        * { box-sizing: border-box; user-select: none; -webkit-tap-highlight-color: transparent; }
         
-        .container {
-            width: 100%;
-            max-width: 500px; /* Optimal mobile width */
-            height: 100%;
+        body {
+            background: var(--bg);
+            color: var(--term);
+            font-family: 'VT323', monospace;
+            font-size: 20px;
+            margin: 0;
+            height: 100vh;
             display: flex;
             flex-direction: column;
+            overflow: hidden;
+        }
+
+        /* --- SCANLINE OVERLAY --- */
+        body::after {
+            content: "";
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+            z-index: 999;
+        }
+
+        /* --- LAYOUT --- */
+        .top-bar {
             padding: 10px;
-            box-sizing: border-box;
-            background: #000;
-            border-left: 1px solid #1a5c00;
-            border-right: 1px solid #1a5c00;
-        }
-
-        h1 { 
-            text-align: center; 
-            margin: 5px 0 10px 0; 
-            font-size: 22px; 
-            text-shadow: 0 0 5px #33ff00; 
-            flex-shrink: 0;
-        }
-
-        /* SCREENS */
-        .screen { display: none; height: 100%; flex-direction: column; }
-        .active-screen { display: flex; }
-
-        /* MENU */
-        .menu-content {
-            flex-grow: 1;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            gap: 20px;
-        }
-        .menu-btn {
-            width: 80%;
-            padding: 20px;
-            font-size: 18px;
-            background: #000;
-            border: 2px solid #33ff00;
-            color: #33ff00;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-weight: bold;
-        }
-        .menu-btn:hover { background: #33ff00; color: #000; }
-
-        /* CLASS SELECTION */
-        .class-list { flex-grow: 1; overflow-y: auto; }
-        .class-card {
-            border: 1px solid #33ff00;
-            padding: 15px;
-            margin-bottom: 15px;
-            cursor: pointer;
-            transition: 0.2s;
-        }
-        .class-card:hover { background: #002200; transform: scale(1.02); }
-        .class-title { font-size: 18px; font-weight: bold; color: #ffff00; margin-bottom: 5px; }
-
-        /* GAME UI */
-        .stats-bar {
+            border-bottom: 2px solid var(--term);
             display: flex;
             justify-content: space-between;
-            border-bottom: 1px dashed #33ff00;
-            padding-bottom: 8px;
-            font-weight: bold;
-            font-size: 14px;
-            flex-shrink: 0;
+            background: #000;
+            z-index: 10;
         }
 
-        .mission-box {
-            border: 1px solid #ffff00;
-            color: #ffff00;
-            padding: 5px;
-            margin-top: 5px;
-            text-align: center;
-            font-weight: bold;
-            font-size: 12px;
-            flex-shrink: 0;
-        }
-
-        .log-window {
+        .main-view {
             flex-grow: 1;
             overflow-y: auto;
-            border: 1px solid #1a5c00;
-            padding: 10px;
-            margin: 10px 0;
-            background-color: #050f05;
-            font-size: 14px;
-            line-height: 1.4;
-        }
-        .log-entry { margin-bottom: 8px; border-bottom: 1px dotted #0f2b00; padding-bottom: 4px; }
-        .highlight { color: #fff; font-weight: bold; }
-        .bad { color: #ff3333; }
-        .good { color: #ffff00; }
-        .win-text { color: #00ffff; font-weight: bold; font-size: 1.2em; text-align: center; display: block; margin-top: 10px;}
-
-        /* CONTROLS */
-        .controls {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 8px;
-            flex-shrink: 0;
-        }
-        button {
-            background: #000;
-            color: #33ff00;
-            border: 1px solid #33ff00;
-            padding: 12px;
-            font-family: inherit;
-            font-weight: bold;
-            cursor: pointer;
-            text-transform: uppercase;
-            font-size: 14px;
-            touch-action: manipulation; /* Improves mobile tap response */
-        }
-        button:active { background: #33ff00; color: #000; }
-        button:disabled { border-color: #555; color: #555; cursor: not-allowed; opacity: 0.5; }
-
-        #btn-rescue {
-            grid-column: span 2;
-            background: #003300;
-            border-color: #ffff00;
-            color: #ffff00;
-            display: none; 
-        }
-
-        .shop-section {
-            border-top: 2px solid #33ff00;
-            padding-top: 8px;
-            margin-top: 8px;
-            flex-shrink: 0;
-        }
-        .shop-controls { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-
-        .inventory { 
-            margin-top: 8px; 
-            padding-top: 5px; 
-            font-size: 12px; 
-            flex-shrink: 0; 
-            border-top: 1px dotted #1a5c00;
-        }
-
-        .top-buttons {
+            padding: 15px;
             display: flex;
-            justify-content: flex-end;
-            gap: 10px;
+            flex-direction: column;
+            gap: 15px;
+            padding-bottom: 80px; /* Space for nav */
+        }
+
+        /* --- CARDS --- */
+        .card {
+            border: 1px solid var(--term);
+            background: #050505;
+            padding: 10px;
+            box-shadow: 0 0 5px rgba(51, 255, 0, 0.2);
+        }
+        .card h3 { margin: 0 0 10px 0; border-bottom: 1px dashed var(--term); font-size: 22px; }
+
+        /* --- CHAT SYSTEM --- */
+        #chat-box {
+            height: 200px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            padding: 5px;
             margin-bottom: 5px;
+            font-size: 16px;
+            background: #000;
         }
-        .small-btn { padding: 5px 10px; font-size: 12px; width: auto; border-color: #555; color: #888; }
+        .chat-msg { margin-bottom: 4px; word-wrap: break-word; }
+        .chat-name { color: var(--warn); font-weight: bold; }
+        .chat-input-row { display: flex; gap: 5px; }
+        #msg-input { 
+            flex-grow: 1; background: #000; color: var(--term); 
+            border: 1px solid var(--term); font-family: inherit; padding: 5px; 
+        }
+
+        /* --- WORLD BOSS --- */
+        .boss-bar-container {
+            width: 100%; height: 20px; border: 1px solid var(--alert); 
+            background: #330000; margin-bottom: 5px;
+        }
+        .boss-fill {
+            height: 100%; background: var(--alert); width: 100%;
+            transition: width 0.5s;
+        }
+
+        /* --- CONTROLS --- */
+        .btn {
+            background: #000; color: var(--term); border: 1px solid var(--term);
+            padding: 10px; font-family: inherit; font-size: 18px; cursor: pointer;
+            text-transform: uppercase; width: 100%;
+        }
+        .btn:active { background: var(--term); color: #000; }
+        .btn:disabled { opacity: 0.5; border-color: #555; color: #555; }
+
+        .nav {
+            position: fixed; bottom: 0; width: 100%;
+            display: grid; grid-template-columns: 1fr 1fr 1fr;
+            background: #000; border-top: 2px solid var(--term);
+            z-index: 100;
+        }
+        .nav-btn {
+            background: #000; color: #555; border: none; border-right: 1px solid #333;
+            padding: 15px; font-family: inherit; font-size: 18px; cursor: pointer;
+        }
+        .nav-btn.active { color: var(--term); background: #0a0a0a; }
+
+        /* SCREENS */
+        .screen { display: none; }
+        .screen.active { display: block; }
         
-        .donate-link {
-            text-align: center;
-            font-size: 12px;
-            margin-top: 10px;
-            padding-bottom: 10px;
-            flex-shrink: 0;
-        }
-        .donate-link a { color: #555; text-decoration: none; }
+        .log-entry { font-size: 16px; margin-bottom: 5px; }
+        .bad { color: var(--alert); }
+        .good { color: var(--warn); }
+
     </style>
 </head>
 <body>
 
-    <div class="container">
-        
-        <div id="screen-menu" class="screen active-screen">
-            <h1>WASTELAND DRIFTER</h1>
-            <div class="menu-content">
-                <button class="menu-btn" onclick="showClassSelection()">NEW GAME</button>
-                <button class="menu-btn" id="btn-load-game" onclick="loadGame()" style="display:none;">CONTINUE</button>
-            </div>
-            <div class="donate-link">
-                <a href="#" target="_blank">Support the Developer</a>
-            </div>
+    <div class="top-bar">
+        <span>HP: <span id="hp">100</span></span>
+        <span>SCRAP: <span id="scrap">0</span></span>
+    </div>
+
+    <div id="tab-explore" class="main-view screen active">
+        <div class="card" id="log-box" style="height: 200px; overflow-y: auto; margin-bottom: 10px;">
+            <div class="log-entry">System Online.</div>
         </div>
 
-        <div id="screen-class" class="screen">
-            <h1>SELECT CLASS</h1>
-            <div class="class-list">
-                <div class="class-card" onclick="startGame('Soldier')">
-                    <div class="class-title">THE SOLDIER</div>
-                    <div>HP: 120 (High)</div>
-                    <div style="font-size:12px; color:#aaa;">Bonus: Takes less damage.</div>
-                </div>
-
-                <div class="class-card" onclick="startGame('Scout')">
-                    <div class="class-title">THE SCOUT</div>
-                    <div>HP: 80 (Low)</div>
-                    <div style="font-size:12px; color:#aaa;">Bonus: Finds Radio Parts faster.</div>
-                </div>
-            </div>
-            <button class="menu-btn" onclick="showMenu()" style="margin-top:10px;">BACK</button>
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+            <button class="btn" onclick="scavenge()">SCAVENGE</button>
+            <button class="btn" onclick="rest()">REST</button>
         </div>
 
-        <div id="screen-game" class="screen">
-            <div class="top-buttons">
-                <button class="small-btn" onclick="saveGame()">SAVE</button>
-                <button class="small-btn" onclick="quitGame()">MENU</button>
+        <div class="card" style="margin-top: 20px; border-color: var(--alert);">
+            <h3 style="color: var(--alert);">⚠ GLOBAL EVENT: MUTANT TITAN</h3>
+            <div class="boss-bar-container">
+                <div id="boss-hp-bar" class="boss-fill"></div>
             </div>
-
-            <div class="stats-bar">
-                <span id="hp">HP: 100</span>
-                <span id="hunger">HNG: 0%</span>
-                <span id="days">DAY: 1</span>
+            <div style="text-align: center; font-size: 16px; margin-bottom: 5px;">
+                HP: <span id="boss-hp-text">Loading...</span> / 1000000
             </div>
-
-            <div class="mission-box" id="mission-display">
-                MISSION: Fix the Radio<br>PARTS: 0 / 3
-            </div>
-
-            <div class="log-window" id="log"></div>
-
-            <div class="controls">
-                <button onclick="scavenge()" id="btn-scavenge">Scavenge</button>
-                <button onclick="rest()" id="btn-rest">Rest</button>
-                <button onclick="eat()" id="btn-eat">Eat</button>
-                <button onclick="meds()" id="btn-meds">Meds</button>
-                <button onclick="callRescue()" id="btn-rescue">TRANSMIT SOS</button>
-            </div>
-
-            <div class="shop-section">
-                <div style="text-align:center; font-size:10px; margin-bottom:2px; color:#666;">TRADING POST</div>
-                <div class="shop-controls">
-                    <button onclick="buyFood()">Food (3 Scrap)</button>
-                    <button onclick="buyMeds()">Meds (5 Scrap)</button>
-                </div>
-            </div>
-
-            <div class="inventory">
-                <span id="inv-display">Empty</span>
+            <button class="btn" style="border-color: var(--alert); color: var(--alert);" onclick="attackBoss()">ATTACK TITAN (Cost: 10 HP)</button>
+            <div style="font-size: 14px; color: #777; text-align: center; margin-top: 5px;">
+                All players damage this boss together.
             </div>
         </div>
+    </div>
 
+    <div id="tab-radio" class="main-view screen">
+        <div class="card">
+            <h3>📡 WASTELAND FREQUENCY</h3>
+            <div id="chat-box">
+                <div class="chat-msg" style="color:#777">Connecting to secure channel...</div>
+            </div>
+            <div class="chat-input-row">
+                <input type="text" id="username" placeholder="Name" style="width: 60px; background:#000; color:var(--warn); border:1px solid var(--term); font-family:inherit; padding:5px;">
+                <input type="text" id="msg-input" placeholder="Broadcast message...">
+                <button class="btn" style="width: auto;" onclick="sendMessage()">SEND</button>
+            </div>
+        </div>
+        <div style="padding: 10px; font-size: 14px; color: #555;">
+            * This is a public frequency. All Drifters can see this.
+        </div>
+    </div>
+
+    <div id="tab-profile" class="main-view screen">
+        <div class="card">
+            <h3>SURVIVOR STATUS</h3>
+            <p>Days Survived: <span id="days">1</span></p>
+            <p>Food: <span id="food">0</span></p>
+            <p>Meds: <span id="meds">0</span></p>
+        </div>
+        <div class="card" style="margin-top: 10px;">
+            <h3>SETTINGS</h3>
+            <button class="btn" onclick="resetGame()">RESET DATA</button>
+            <div style="margin-top: 10px; text-align: center;">
+                <a href="https://ko-fi.com/" target="_blank" style="color: var(--warn);">Support the Dev</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav">
+        <button class="nav-btn active" onclick="setTab('explore', this)">EXPLORE</button>
+        <button class="nav-btn" onclick="setTab('radio', this)">RADIO</button>
+        <button class="nav-btn" onclick="setTab('profile', this)">PROFILE</button>
     </div>
 
     <script>
-        // GAME STATE
-        let hp = 100, maxHp = 100, hunger = 0, days = 1, gameOver = false, playerClass = "Survivor";
-        let inventory = { food: 2, meds: 1, scrap: 0, radioParts: 0 };
-        const logEl = document.getElementById('log');
+        // --- GUN.JS MULTIPLAYER SETUP ---
+        // We use public relay peers. These are free community servers.
+        const gun = Gun(['https://gun-manhattan.herokuapp.com/gun']);
+        
+        // Chat Node
+        const chatNode = gun.get('wasteland-drifter-chat-v1');
+        // Boss Node
+        const bossNode = gun.get('wasteland-boss-v1');
 
-        window.onload = function() {
-            if (localStorage.getItem('wasteland_save')) {
-                document.getElementById('btn-load-game').style.display = 'block';
-            }
+        // --- LOCAL GAME STATE ---
+        let state = {
+            hp: 100, maxHp: 100, scrap: 0, food: 2, meds: 1, days: 1
         };
 
-        function showMenu() { switchScreen('screen-menu'); }
-        function showClassSelection() { switchScreen('screen-class'); }
-        function switchScreen(id) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active-screen'));
-            document.getElementById(id).classList.add('active-screen');
-        }
-
-        function saveGame() {
-            if(gameOver) return;
-            const data = { hp, maxHp, hunger, days, inventory, playerClass, logHtml: logEl.innerHTML };
-            localStorage.setItem('wasteland_save', JSON.stringify(data));
-            alert("Saved.");
-        }
-
-        function loadGame() {
-            const save = localStorage.getItem('wasteland_save');
-            if (!save) return;
-            const data = JSON.parse(save);
-            hp = data.hp; maxHp = data.maxHp; hunger = data.hunger; days = data.days; inventory = data.inventory; playerClass = data.playerClass;
-            switchScreen('screen-game');
-            logEl.innerHTML = data.logHtml;
-            log("Game Loaded.", "highlight");
+        // --- INIT ---
+        window.onload = function() {
+            if(localStorage.getItem('wd_online_save')) {
+                state = JSON.parse(localStorage.getItem('wd_online_save'));
+            }
             updateUI();
-        }
-
-        function quitGame() {
-            if(confirm("Exit to menu?")) showMenu();
-        }
-
-        function startGame(cls) {
-            playerClass = cls; days = 1; hunger = 0; gameOver = false;
-            inventory = { food: 2, meds: 1, scrap: 0, radioParts: 0 };
-            logEl.innerHTML = "";
             
-            if (cls === 'Soldier') { maxHp = 120; hp = 120; inventory.meds = 2; } 
-            else { maxHp = 80; hp = 80; inventory.food = 4; }
+            // Listen for Chat
+            chatNode.map().once((data, id) => {
+                if(data && data.msg && data.time > Date.now() - 3600000) { // Only last 1 hour
+                    addChatToUI(data.name, data.msg);
+                }
+            });
 
-            switchScreen('screen-game');
-            log(`Welcome, ${cls}. Find 3 Radio Parts.`, "highlight");
+            // Listen for Boss HP
+            bossNode.get('hp').on((hp) => {
+                if(hp === undefined || hp === null) hp = 1000000;
+                updateBossUI(hp);
+            });
+        };
+
+        // --- CORE GAMEPLAY ---
+        function scavenge() {
+            if(state.hp <= 0) return;
+            state.days++;
+            let roll = Math.random();
+            if(roll < 0.3) {
+                let dmg = Math.floor(Math.random() * 10) + 5;
+                state.hp -= dmg;
+                log(`Attacked by Rat! Took ${dmg} dmg.`, "bad");
+            } else {
+                let find = Math.random();
+                if(find < 0.5) { state.scrap += Math.floor(Math.random()*5)+1; log("Found Scrap."); }
+                else if(find < 0.8) { state.food++; log("Found Food.", "good"); }
+                else { state.meds++; log("Found Meds!", "good"); }
+            }
+            checkDeath();
             updateUI();
+        }
+
+        function rest() {
+            if(state.hp <= 0) return;
+            state.hp = Math.min(state.hp + 10, state.maxHp);
+            log("Rested. +10 HP.");
+            updateUI();
+        }
+
+        // --- MULTIPLAYER ACTIONS ---
+        
+        function sendMessage() {
+            const name = document.getElementById('username').value || "Drifter";
+            const msg = document.getElementById('msg-input').value;
+            if(!msg) return;
+
+            // Send to GUN network
+            chatNode.set({
+                name: name,
+                msg: msg,
+                time: Date.now()
+            });
+
+            document.getElementById('msg-input').value = "";
+        }
+
+        function addChatToUI(name, msg) {
+            const box = document.getElementById('chat-box');
+            const div = document.createElement('div');
+            div.className = 'chat-msg';
+            div.innerHTML = `<span class="chat-name">[${name}]:</span> ${msg}`;
+            box.appendChild(div);
+            box.scrollTop = box.scrollHeight;
+        }
+
+        function attackBoss() {
+            if(state.hp <= 10) { log("Too weak to fight Titan!", "bad"); return; }
+            state.hp -= 10;
+            updateUI();
+
+            // Transaction to lower Global HP
+            // Note: In a real app, we need backend validation. 
+            // For this simple version, we trust the client (optimistic).
+            bossNode.get('hp').once((currentHp) => {
+                let newHp = (currentHp || 1000000) - 100; // Deal 100 damage
+                if(newHp < 0) newHp = 1000000; // Reset if dead (Respawn)
+                bossNode.get('hp').put(newHp);
+                
+                log(`You hit the Titan! Global HP: ${newHp}`, "good");
+            });
+        }
+
+        function updateBossUI(hp) {
+            document.getElementById('boss-hp-text').innerText = hp;
+            let pct = (hp / 1000000) * 100;
+            document.getElementById('boss-hp-bar').style.width = pct + "%";
+        }
+
+        // --- UTILS ---
+        function checkDeath() {
+            if(state.hp <= 0) {
+                state.hp = 0;
+                log("YOU DIED.", "bad");
+                alert("You have died. Reload to restart.");
+                state = { hp: 100, maxHp: 100, scrap: 0, food: 0, meds: 0, days: 1 };
+            }
         }
 
         function updateUI() {
-            document.getElementById('hp').innerText = `HP:${hp}/${maxHp}`;
-            document.getElementById('hunger').innerText = `HNG:${hunger}%`;
-            document.getElementById('days').innerText = `DAY:${days}`;
-            
-            document.getElementById('mission-display').innerHTML = `MISSION: Fix the Radio<br>PARTS: ${inventory.radioParts} / 3`;
-            if (inventory.radioParts >= 3) {
-                document.getElementById('mission-display').innerHTML = "RADIO REPAIRED<br>READY TO TRANSMIT";
-                document.getElementById('mission-display').style.color = "#00ff00";
-                document.getElementById('mission-display').style.borderColor = "#00ff00";
-            }
-
-            let inv = [];
-            inv.push(`Food:${inventory.food}`);
-            inv.push(`Meds:${inventory.meds}`);
-            inv.push(`Scrap:${inventory.scrap}`);
-            inv.push(`Parts:${inventory.radioParts}`);
-            document.getElementById('inv-display').innerText = inv.join(' | ');
-
-            if (inventory.radioParts >= 3 && !gameOver) document.getElementById('btn-rescue').style.display = 'block';
-            else document.getElementById('btn-rescue').style.display = 'none';
-
-            if ((hp <= 0 || hunger >= 100) && !gameOver) {
-                gameOver = true; hp = 0;
-                log("You died.", "bad");
-                log(`GAME OVER. Days: ${days}`, "highlight");
-                disableButtons();
-            }
+            document.getElementById('hp').innerText = state.hp;
+            document.getElementById('scrap').innerText = state.scrap;
+            document.getElementById('food').innerText = state.food;
+            document.getElementById('meds').innerText = state.meds;
+            document.getElementById('days').innerText = state.days;
+            localStorage.setItem('wd_online_save', JSON.stringify(state));
         }
 
-        function log(msg, type="") {
+        function log(msg, type='') {
+            const box = document.getElementById('log-box');
             const div = document.createElement('div');
             div.className = `log-entry ${type}`;
             div.innerText = `> ${msg}`;
-            logEl.appendChild(div);
-            logEl.scrollTop = logEl.scrollHeight;
+            box.prepend(div);
         }
 
-        function rollDice(n) { return Math.floor(Math.random() * n) + 1; }
+        function setTab(id, btn) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('tab-' + id).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            btn.classList.add('active');
+        }
         
-        function disableButtons() {
-            ['btn-scavenge','btn-rest','btn-eat','btn-meds'].forEach(id => document.getElementById(id).disabled = true);
-        }
-
-        function scavenge() {
-            if (gameOver) return;
-            days++; hunger += 10;
-            let roll = rollDice(20), enemyChance = rollDice(100), partChance = rollDice(100);
-            
-            if (playerClass === 'Scout') partChance -= 15; 
-
-            if (enemyChance < 30) {
-                let dmg = rollDice(15);
-                if (playerClass === 'Soldier') dmg = Math.max(0, dmg - 3);
-                hp -= dmg;
-                log(`Enemy! Took ${dmg} dmg.`, "bad");
-                if (hp > 0) { inventory.scrap += 2; log("Won fight. +2 Scrap.", "good"); }
-            } else {
-                if (roll === 1) {
-                    let dmg = rollDice(10); hp -= dmg; log(`Trap! Took ${dmg} dmg.`, "bad");
-                } else if (roll < 8) {
-                    log("Found nothing.");
-                } else {
-                    if (partChance <= 10 && inventory.radioParts < 3) {
-                        inventory.radioParts++; log("!!! FOUND RADIO PART !!!", "highlight");
-                    } else if (roll < 15) {
-                        let f = Math.random() > 0.5 ? "food" : "scrap";
-                        inventory[f]++; log(`Found 1 ${f}.`, "good");
-                    } else {
-                        inventory.scrap += 4; log("Found pile of Scrap!", "highlight");
-                    }
-                }
-            }
-            updateUI();
-        }
-
-        function rest() { if(gameOver)return; days++; hp = Math.min(hp+15,maxHp); hunger+=15; log("Rested."); updateUI(); }
-        function eat() { if(gameOver)return; if(inventory.food>0){inventory.food--; hunger=Math.max(0,hunger-30); hp=Math.min(hp+5,maxHp); log("Ate food.");} else log("No food!","bad"); updateUI(); }
-        function meds() { if(gameOver)return; if(inventory.meds>0){inventory.meds--; hp=Math.min(hp+50,maxHp); log("Used Meds.");} else log("No meds!","bad"); updateUI(); }
-        
-        function buyFood() { if(inventory.scrap>=3){inventory.scrap-=3; inventory.food++; log("Bought Food.","good"); updateUI();} else log("Need 3 Scrap.","bad"); }
-        function buyMeds() { if(inventory.scrap>=5){inventory.scrap-=5; inventory.meds++; log("Bought Meds.","good"); updateUI();} else log("Need 5 Scrap.","bad"); }
-
-        function callRescue() {
-            if(gameOver) return;
-            gameOver = true;
-            log("SIGNAL SENT. CHOPPER INBOUND.", "win-text");
-            log("YOU WIN!", "win-text");
-            document.querySelector('.container').style.borderColor = "#00ffff";
-            disableButtons();
+        function resetGame() {
+            localStorage.removeItem('wd_online_save');
+            location.reload();
         }
     </script>
 </body>
