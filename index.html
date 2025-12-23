@@ -3,10 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wasteland Drifter v12 (Combat)</title>
+    <title>Wasteland Drifter v13 (Unified)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
+        /* ==============================
+           1. CSS VARIABLES & THEMES
+           ============================== */
         :root {
             --bg: #050505; --card: #141414; --border: #333;
             --primary: #00e676; --danger: #ff5252; --warn: #ffab00; --rare: #d500f9;
@@ -14,12 +17,20 @@
             --font: 'Roboto Mono', monospace;
         }
 
+        /* Theme Classes */
+        body.theme-amber { --primary: #ffab00; --bg: #0a0500; }
+        body.theme-cyan { --primary: #00b0ff; --bg: #00050a; }
+        body.theme-red { --primary: #ff1744; --bg: #110000; --danger: #ff0000; }
+
         body {
             background-color: var(--bg); color: var(--text); font-family: var(--font);
             margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
+            transition: background 0.3s, color 0.3s;
         }
 
-        /* --- UI COMPONENTS --- */
+        /* ==============================
+           2. UI COMPONENTS
+           ============================== */
         .header {
             padding: 10px 15px; background: #111; border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center; z-index: 10;
@@ -27,6 +38,7 @@
         .badge { font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
         .badge.safe { background: #003300; color: var(--primary); border: 1px solid var(--primary); }
         .badge.danger { background: #330000; color: var(--danger); border: 1px solid var(--danger); }
+        .badge.buff { background: #332200; color: var(--warn); border: 1px solid var(--warn); }
 
         .main-view { flex-grow: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; display: none; flex-direction: column; gap: 15px; }
         .main-view.active { display: flex; }
@@ -36,7 +48,8 @@
             position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .card h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        
+        .card p { font-size: 12px; color: var(--dim); margin: 0 0 10px 0; }
+
         button {
             background: var(--card); border: 1px solid var(--border); color: var(--text);
             padding: 12px; border-radius: 4px; font-family: inherit; font-weight: bold;
@@ -47,7 +60,9 @@
         button.danger { background: var(--danger); color: #fff; border: none; }
         button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        /* --- INVENTORY & MUSEUM --- */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* Inventory Grid */
         .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; }
         .inv-slot {
             aspect-ratio: 1; background: #222; border: 1px solid #444; border-radius: 4px;
@@ -55,55 +70,54 @@
         }
         .inv-slot.filled { border-color: var(--dim); }
         
-        .artifact-row { 
-            display: flex; justify-content: space-between; padding: 8px; background: #1a1a1a; 
-            margin-bottom: 5px; border-left: 2px solid var(--rare); font-size: 12px;
+        /* Logs */
+        .log-box {
+            height: 150px; overflow-y: auto; background: #000; border: 1px solid #333; padding: 10px;
+            display: flex; flex-direction: column-reverse; gap: 5px; border-radius: 4px; font-size: 12px;
         }
+        .msg { border-left: 2px solid #555; padding-left: 5px; }
+        .msg.good { border-color: var(--primary); color: #ccffcc; }
+        .msg.bad { border-color: var(--danger); color: #ffcccc; }
+        .msg.rare { border-color: var(--rare); color: #ffccff; }
 
-        /* --- COMBAT ARENA --- */
-        #combat-overlay {
+        /* ==============================
+           3. OVERLAYS (Combat/Event)
+           ============================== */
+        .overlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0,0,0,0.95); z-index: 50; display: none;
-            flex-direction: column; padding: 20px;
+            flex-direction: column; justify-content: center; align-items: center; padding: 20px;
         }
-        .enemy-box {
-            text-align: center; margin-bottom: 20px;
-            animation: float 3s infinite ease-in-out;
-        }
+        
+        /* Combat UI */
+        .enemy-box { text-align: center; margin-bottom: 20px; animation: float 3s infinite ease-in-out; }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
-        
         .enemy-sprite { font-size: 60px; display: block; }
-        
         .hp-container { width: 100%; background: #333; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
         .hp-fill { height: 100%; width: 100%; transition: width 0.3s; }
         .hp-enemy { background: var(--danger); }
-        .hp-player { background: var(--primary); }
-
         .energy-pips { display: flex; justify-content: center; gap: 5px; margin: 10px 0; }
         .pip { width: 15px; height: 15px; border-radius: 50%; background: #333; border: 1px solid #555; }
         .pip.active { background: var(--warn); border-color: #fff; box-shadow: 0 0 5px var(--warn); }
+        .combat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; width: 100%; max-width: 400px; }
 
-        .combat-log {
-            font-size: 12px; color: #aaa; text-align: center; height: 30px; margin-bottom: 10px;
+        /* Event UI */
+        .modal-box {
+            background: var(--card); border: 2px solid var(--primary);
+            padding: 20px; width: 100%; max-width: 400px; text-align: center;
+            border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.8);
         }
 
-        .combat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        /* --- NAV --- */
+        /* ==============================
+           4. NAVIGATION
+           ============================== */
         .nav-deck {
             position: fixed; bottom: 0; width: 100%; background: #080808; border-top: 1px solid #333;
-            display: grid; grid-template-columns: 1fr 1fr 1fr; height: 60px; z-index: 20;
+            display: grid; grid-template-columns: repeat(4, 1fr); height: 60px; z-index: 20;
         }
         .nav-btn { background: none; border: none; color: #555; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; gap: 4px; }
         .nav-btn span { font-size: 18px; }
         .nav-btn.active { color: var(--primary); }
-
-        /* --- DEATH SCREEN --- */
-        #death-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #220000; z-index: 99; display: none;
-            flex-direction: column; justify-content: center; align-items: center; color: var(--danger);
-        }
 
     </style>
 </head>
@@ -117,28 +131,62 @@
     <div id="view-bunker" class="main-view active">
         <div class="card">
             <h3>PREPARE BACKPACK</h3>
-            <p>Select items to bring. Max 5.</p>
+            <p>Select items. Max 5 slots.</p>
             <div style="background:#222; padding:10px; margin-bottom:10px;">
                 <div id="prep-grid" class="inv-grid"></div>
             </div>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
+            <div class="grid-2">
                 <button onclick="addToPack('food')">+ FOOD (<span id="stash-food">0</span>)</button>
                 <button onclick="addToPack('meds')">+ MEDS (<span id="stash-meds">0</span>)</button>
             </div>
-            <button class="primary" style="margin-top:10px;" onclick="startExpedition()">START EXPEDITION</button>
+            <button class="primary" style="margin-top:10px;" onclick="startExpedition()">LEAVE BUNKER</button>
+        </div>
+
+        <div class="card">
+            <h3>📡 RADIO SCANNER</h3>
+            <p>Scan for signal buffs. (Cooldown: 1 Run)</p>
+            <button onclick="scanRadio()" id="btn-scan">SCAN FREQUENCY</button>
+            <div id="radio-result" style="margin-top:5px; font-size:12px; color:var(--warn);"></div>
+        </div>
+    </div>
+
+    <div id="view-workshop" class="main-view">
+        <div class="card">
+            <h3>🛠️ WORKSHOP</h3>
+            <p>Upgrade your persistent stats.</p>
+            
+            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                <div style="font-weight:bold; color:#fff;">🛏️ Bed (20 Scrap)</div>
+                <p>Heal +10 HP when returning home.</p>
+                <button onclick="buyUpgrade('bed', 20)">INSTALL</button>
+            </div>
+            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                <div style="font-weight:bold; color:#fff;">💧 Water Filter (40 Scrap)</div>
+                <p>Start every run with 1 extra Food.</p>
+                <button onclick="buyUpgrade('filter', 40)">BUILD</button>
+            </div>
+            <div>
+                <div style="font-weight:bold; color:#fff;">🛡️ Reinforced Armor (60 Scrap)</div>
+                <p>Take -2 Damage in all combat.</p>
+                <button onclick="buyUpgrade('armor', 60)">CRAFT</button>
+            </div>
+        </div>
+        <div class="card">
+            <h3>🐕 CYBER-DOG</h3>
+            <div id="dog-status" style="color:#aaa; font-size:12px;">Status: Missing. Find him in the wasteland.</div>
         </div>
     </div>
 
     <div id="view-expedition" class="main-view">
         <div class="card" style="border-color:var(--danger); text-align:center;">
             <h2 style="margin:0; color:var(--danger);">MILE <span id="mile-display">0</span></h2>
-            <div style="font-size:12px; color:#aaa;">DISTANCE FROM HOME</div>
+            <div id="active-buff-display" class="badge buff" style="display:none; margin-top:5px;">BUFF ACTIVE</div>
         </div>
 
         <div class="card">
-            <h3>PLAYER STATUS</h3>
+            <h3>STATUS</h3>
             <div>HP: <span id="exp-hp">100</span>%</div>
-            <div class="hp-container"><div id="bar-hp" class="hp-fill hp-player"></div></div>
+            <div class="hp-container"><div id="bar-hp" class="hp-fill" style="background:var(--primary);"></div></div>
             <div style="margin-top:10px; display:flex; justify-content:space-between; font-size:12px;">
                 <span>🎒 Food: <span id="pack-food">0</span></span>
                 <span>🎒 Meds: <span id="pack-meds">0</span></span>
@@ -150,35 +198,43 @@
             <button class="danger" onclick="endExpedition()">RETURN HOME (Secure Loot)</button>
         </div>
         
-        <div class="card">
-            <h3>LOOT BAG</h3>
-            <div id="loot-list" style="font-size:12px; color:#fff;">Empty</div>
-        </div>
+        <div id="exp-log" class="log-box"></div>
     </div>
 
     <div id="view-museum" class="main-view">
         <div class="card">
-            <h3>🏛️ MUSEUM</h3>
+            <h3>🏛️ ARTIFACTS</h3>
             <div id="museum-list"></div>
+        </div>
+        <div class="card">
+            <h3>🎨 THEMES</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px;">
+                <button style="color:#00e676; border-color:#00e676;" onclick="setTheme('')">GREEN</button>
+                <button style="color:#ffab00; border-color:#ffab00;" onclick="setTheme('theme-amber')">AMBER</button>
+                <button style="color:#00b0ff; border-color:#00b0ff;" onclick="setTheme('theme-cyan')">CYAN</button>
+                <button style="color:#ff1744; border-color:#ff1744;" onclick="setTheme('theme-red')">RED</button>
+            </div>
+        </div>
+        <div class="card">
+            <button class="danger" onclick="resetData()">HARD RESET DATA</button>
         </div>
     </div>
 
-    <div id="combat-overlay">
-        <h2 style="text-align:center; color:var(--danger); margin-bottom:5px;">COMBAT MODE</h2>
+    <div id="combat-overlay" class="overlay">
+        <h2 style="color:var(--danger);">COMBAT MODE</h2>
         
         <div class="card enemy-box">
             <span id="enemy-icon" class="enemy-sprite">🐀</span>
             <div id="enemy-name" style="font-weight:bold; color:var(--danger);">Mutant Rat</div>
             <div class="hp-container"><div id="enemy-bar" class="hp-fill hp-enemy"></div></div>
-            <div style="font-size:12px;">HP: <span id="enemy-hp">20</span></div>
+            <div style="font-size:12px;">Enemy HP: <span id="enemy-hp">20</span></div>
         </div>
 
-        <div style="text-align:center; color:#fff;">YOUR ENERGY</div>
+        <div style="text-align:center; color:#fff;">ENERGY</div>
         <div id="energy-pips" class="energy-pips">
             <div class="pip"></div><div class="pip"></div><div class="pip"></div>
         </div>
-        
-        <div id="combat-msg" class="combat-log">Your turn...</div>
+        <div id="combat-msg" style="height:20px; color:#aaa; font-size:12px; margin-bottom:10px;">Your turn...</div>
 
         <div class="combat-grid">
             <button class="primary" onclick="playerAction('slash')">SLASH (1)</button>
@@ -186,22 +242,33 @@
             <button class="danger" onclick="playerAction('heavy')">SMASH (2)</button>
             <button onclick="useCombatItem()">HEAL (2)</button>
         </div>
+        <div id="dog-assist" style="display:none; color:var(--primary); font-size:10px; margin-top:10px;">🐕 Cyber-Dog ready to assist!</div>
     </div>
 
-    <div id="death-screen">
-        <h1>YOU DIED</h1>
-        <p>Your loot remains in the wastes.</p>
+    <div id="event-overlay" class="overlay">
+        <div class="modal-box">
+            <h2 id="evt-title" style="color:var(--primary); margin-top:0;">EVENT</h2>
+            <p id="evt-desc" style="color:var(--text); margin-bottom:20px;"></p>
+            <div id="evt-choices" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
+    </div>
+
+    <div id="death-screen" class="overlay">
+        <h1 style="color:var(--danger);">YOU DIED</h1>
+        <p style="color:#aaa;">Your backpack was lost.</p>
         <button style="width:200px; margin-top:20px;" onclick="respawn()">RESPAWN</button>
     </div>
 
     <div class="nav-deck" id="nav-bar">
         <button class="nav-btn active" onclick="switchView('bunker')"><span>🏠</span>BUNKER</button>
-        <button class="nav-btn" onclick="switchView('museum')"><span>🏛️</span>MUSEUM</button>
-        <button class="nav-btn" onclick="resetData()"><span>⚙️</span>RESET</button>
+        <button class="nav-btn" onclick="switchView('workshop')"><span>🛠️</span>SHOP</button>
+        <button class="nav-btn" onclick="switchView('museum')"><span>🏛️</span>EXTRAS</button>
     </div>
 
     <script>
-        // --- DATA ---
+        // ==========================================
+        // 1. GAME DATA & STATE
+        // ==========================================
         const ENEMIES = [
             { name: "Rad-Rat", hp: 20, dmg: 5, icon: "🐀", loot: 2 },
             { name: "Scavenger", hp: 40, dmg: 8, icon: "👺", loot: 5 },
@@ -210,187 +277,241 @@
         ];
 
         const ARTIFACTS = [
-            { id: 'watch', name: 'Gold Watch', desc: '+Scrap Gain', icon: '⌚' },
-            { id: 'map', name: 'Old Map', desc: 'Less Combat', icon: '🗺️' }
+            { id: 'watch', name: 'Gold Watch', desc: '+10% Scrap' },
+            { id: 'compass', name: 'Compass', desc: 'Lower Risk' },
+            { id: 'comic', name: 'Comic', desc: '+5 Max HP' }
         ];
 
-        // --- STATE ---
         let state = {
             stash: { food: 5, meds: 2, scrap: 0 },
+            upgrades: { bed: false, filter: false, armor: false },
             collection: [],
-            maxHp: 100
+            dog: false,
+            theme: '',
+            radioBuff: null
         };
 
-        let run = {
-            active: false,
-            hp: 100,
-            mile: 0,
-            backpack: { food: 0, meds: 0 },
-            loot: { scrap: 0, artifacts: [] }
-        };
-
-        let combat = {
-            active: false,
-            enemy: null,
-            maxEnemyHp: 0,
-            currentEnemyHp: 0,
-            energy: 3,
-            blocking: false
-        };
+        // Volatile State (Run)
+        let run = { active: false, hp: 100, mile: 0, backpack: { food: 0, meds: 0 }, loot: 0 };
+        let combat = { active: false, enemy: null, energy: 3, blocking: false };
 
         window.onload = () => {
-            if(localStorage.getItem('wd_v12_save')) state = JSON.parse(localStorage.getItem('wd_v12_save'));
+            if(localStorage.getItem('wd_v13_save')) state = JSON.parse(localStorage.getItem('wd_v13_save'));
+            if(state.theme) document.body.className = state.theme;
             updateUI();
         };
 
-        // --- EXPEDITION ---
+        // ==========================================
+        // 2. BUNKER & WORKSHOP LOGIC
+        // ==========================================
         function addToPack(item) {
             let count = run.backpack.food + run.backpack.meds;
             if(count >= 5) return alert("Backpack Full!");
             if(state.stash[item] > 0) { state.stash[item]--; run.backpack[item]++; updateUI(); }
         }
 
+        function buyUpgrade(id, cost) {
+            if(state.upgrades[id]) return alert("Already Owned!");
+            if(state.stash.scrap >= cost) {
+                state.stash.scrap -= cost;
+                state.upgrades[id] = true;
+                alert("Upgrade Purchased!");
+                updateUI();
+            } else alert("Not enough Scrap!");
+        }
+
+        function scanRadio() {
+            if(state.radioBuff) return alert("Signal already active!");
+            let r = Math.random();
+            let msg = "";
+            if(r < 0.4) { state.radioBuff = "safe"; msg = "Intel: Route is safer."; }
+            else if(r < 0.8) { state.radioBuff = "loot"; msg = "Intel: High Loot detected."; }
+            else { msg = "Static... nothing found."; }
+            document.getElementById('radio-result').innerText = msg;
+            updateUI();
+        }
+
+        function setTheme(t) {
+            document.body.className = t;
+            state.theme = t;
+            saveGame();
+        }
+
+        // ==========================================
+        // 3. EXPEDITION LOGIC
+        // ==========================================
         function startExpedition() {
-            run = { active: true, hp: state.maxHp, mile: 0, backpack: {...run.backpack}, loot: { scrap:0, artifacts:[] } };
-            // Clear stash backpack buffer
-            run.backpack.food = parseInt(document.getElementById('prep-grid').querySelectorAll('.filled').length) || run.backpack.food; // Simple sync
+            // Apply Water Filter Bonus
+            if(state.upgrades.filter) run.backpack.food++;
+            
+            run.active = true;
+            run.hp = 100 + (state.collection.includes('comic') ? 5 : 0);
+            run.mile = 0;
+            run.loot = 0;
             
             switchView('expedition');
             document.getElementById('nav-bar').style.display = 'none';
+            document.getElementById('exp-log').innerHTML = ''; // Clear log
+            log("Left the bunker...");
             updateExpUI();
         }
 
         function nextMile() {
             run.mile++;
             let risk = 20 + (run.mile * 5);
-            if(state.collection.includes('map')) risk -= 10;
+            if(state.collection.includes('compass')) risk -= 10;
+            if(state.radioBuff === 'safe') risk -= 20;
 
             if(Math.random() * 100 < risk) {
-                // COMBAT TRIGGER
-                let enemyLevel = Math.min(Math.floor(run.mile / 3), ENEMIES.length - 1);
-                startCombat(ENEMIES[enemyLevel]);
+                // Combat or Event?
+                if(Math.random() < 0.2) triggerEvent(); 
+                else {
+                     let elvl = Math.min(Math.floor(run.mile/3), ENEMIES.length-1);
+                     startCombat(ENEMIES[elvl]);
+                }
             } else {
-                // LOOT EVENT
-                let find = Math.floor(Math.random() * 5) + (run.mile * 2);
-                if(state.collection.includes('watch')) find += 2;
-                run.loot.scrap += find;
+                // Loot
+                let amt = Math.floor(Math.random()*5) + run.mile;
+                if(state.radioBuff === 'loot') amt *= 2;
+                if(state.collection.includes('watch')) amt = Math.ceil(amt*1.1);
                 
-                // Artifact Chance
-                if(Math.random() < 0.1 && run.mile > 3) {
+                run.loot += amt;
+                log(`Mile ${run.mile}: Found ${amt} Scrap.`, "good");
+                
+                // Artifact Check
+                if(Math.random() < 0.05) {
                     let art = ARTIFACTS[Math.floor(Math.random()*ARTIFACTS.length)];
-                    if(!run.loot.artifacts.includes(art.id) && !state.collection.includes(art.id)) {
-                        run.loot.artifacts.push(art.id);
-                        alert(`FOUND ARTIFACT: ${art.name}`);
+                    if(!state.collection.includes(art.id)) {
+                        state.collection.push(art.id);
+                        log(`FOUND RARE ARTIFACT: ${art.name}!`, "rare");
                     }
                 }
-                updateExpUI();
+
+                // Dog Check
+                if(!state.dog && Math.random() < 0.05) triggerDogEvent();
             }
+            updateExpUI();
         }
 
-        // --- COMBAT SYSTEM ---
+        // ==========================================
+        // 4. COMBAT SYSTEM
+        // ==========================================
         function startCombat(template) {
-            combat.active = true;
-            combat.enemy = template;
-            combat.maxEnemyHp = template.hp;
-            combat.currentEnemyHp = template.hp;
-            combat.energy = 3;
-            combat.blocking = false;
-
+            combat = { active: true, enemy: {...template}, energy: 3, blocking: false, curHp: template.hp };
             document.getElementById('combat-overlay').style.display = 'flex';
-            document.getElementById('enemy-name').innerText = template.name;
-            document.getElementById('enemy-icon').innerText = template.icon;
+            document.getElementById('enemy-name').innerText = combat.enemy.name;
+            document.getElementById('enemy-icon').innerText = combat.enemy.icon;
+            if(state.dog) document.getElementById('dog-assist').style.display='block';
             updateCombatUI();
         }
 
         function playerAction(type) {
             let cost = (type === 'heavy' || type === 'heal') ? 2 : 1;
-            if(combat.energy < cost) {
-                document.getElementById('combat-msg').innerText = "Not enough Energy!";
-                return;
-            }
-
+            if(combat.energy < cost) return;
             combat.energy -= cost;
-            let msg = "";
 
             if(type === 'slash') {
-                let dmg = Math.floor(Math.random() * 5) + 5;
-                combat.currentEnemyHp -= dmg;
-                msg = `Slashed for ${dmg} dmg!`;
-            } 
-            else if(type === 'heavy') {
-                let dmg = Math.floor(Math.random() * 10) + 10;
-                combat.currentEnemyHp -= dmg;
-                msg = `SMASHED for ${dmg} dmg!`;
-            }
-            else if(type === 'block') {
+                combat.curHp -= 5;
+                document.getElementById('combat-msg').innerText = "Hit for 5 damage!";
+            } else if(type === 'heavy') {
+                combat.curHp -= 12;
+                document.getElementById('combat-msg').innerText = "Heavy Hit! 12 damage!";
+            } else if(type === 'block') {
                 combat.blocking = true;
-                msg = "Shields up! (-50% incoming)";
+                document.getElementById('combat-msg').innerText = "Blocking next attack.";
             }
 
-            document.getElementById('combat-msg').innerText = msg;
+            // Dog Attack
+            if(state.dog) { combat.curHp -= 2; }
+
             updateCombatUI();
-            checkWin();
+            if(combat.curHp <= 0) winCombat();
+            else if(combat.energy <= 0) setTimeout(enemyTurn, 1000);
         }
 
         function useCombatItem() {
             if(combat.energy < 2) return;
             if(run.backpack.meds > 0) {
                 run.backpack.meds--;
-                run.hp = Math.min(run.hp + 40, state.maxHp);
+                run.hp = Math.min(100, run.hp+40);
                 combat.energy -= 2;
-                document.getElementById('combat-msg').innerText = "Healed +40 HP";
                 updateCombatUI();
-            } else {
-                document.getElementById('combat-msg').innerText = "No Meds!";
+                updateExpUI();
             }
         }
 
         function enemyTurn() {
-            // Simple AI: Wait 1 sec then attack
-            setTimeout(() => {
-                if(combat.currentEnemyHp <= 0) return;
-                
-                let dmg = combat.enemy.dmg;
-                if(combat.blocking) dmg = Math.floor(dmg / 2);
-                
-                run.hp -= dmg;
-                combat.energy = 3; // Reset Player Energy
-                combat.blocking = false;
-                
-                document.getElementById('combat-msg').innerText = `Enemy hit you for ${dmg} dmg!`;
-                updateCombatUI();
-                
-                if(run.hp <= 0) die();
-            }, 1000);
-        }
-
-        function checkWin() {
-            if(combat.currentEnemyHp <= 0) {
-                setTimeout(() => {
-                    alert(`Victory! Looted ${combat.enemy.loot} Scrap.`);
-                    run.loot.scrap += combat.enemy.loot;
-                    document.getElementById('combat-overlay').style.display = 'none';
-                    combat.active = false;
-                    updateExpUI();
-                }, 500);
-            } else if (combat.energy <= 0) {
-                enemyTurn();
-            }
-        }
-
-        // --- CORE FUNCTIONS ---
-        function endExpedition() {
-            state.stash.scrap += run.loot.scrap;
-            run.loot.artifacts.forEach(id => { if(!state.collection.includes(id)) state.collection.push(id); });
+            let dmg = combat.enemy.dmg;
+            if(state.upgrades.armor) dmg -= 2;
+            if(combat.blocking) dmg = Math.floor(dmg/2);
             
-            // Return leftovers
+            run.hp -= Math.max(0, dmg);
+            combat.energy = 3; combat.blocking = false;
+            document.getElementById('combat-msg').innerText = `Enemy dealt ${dmg} dmg!`;
+            updateCombatUI();
+            updateExpUI();
+            if(run.hp <= 0) die();
+        }
+
+        function winCombat() {
+            document.getElementById('combat-overlay').style.display = 'none';
+            run.loot += combat.enemy.loot;
+            log(`Defeated ${combat.enemy.name}. Looted ${combat.enemy.loot} Scrap.`, "good");
+            updateExpUI();
+        }
+
+        // ==========================================
+        // 5. EVENTS
+        // ==========================================
+        function triggerEvent() {
+            showModal("SURVIVOR", "A survivor begs for food.", [
+                {l:"Give Food", f:()=>{
+                    if(run.backpack.food>0){ run.backpack.food--; log("Gave food. Got intel.", "good"); }
+                    else log("No food to give.", "bad");
+                }},
+                {l:"Ignore", f:()=>{ log("Ignored survivor."); }}
+            ]);
+        }
+
+        function triggerDogEvent() {
+            showModal("BROKEN DOG", "A robot dog needs repair.", [
+                {l:"Fix (10 Scrap)", f:()=>{
+                    if(state.stash.scrap>=10) { state.stash.scrap-=10; state.dog=true; log("DOG JOINED YOU!", "rare"); }
+                    else log("Not enough scrap.", "bad");
+                }},
+                {l:"Leave", f:()=>{ log("Left dog."); }}
+            ]);
+        }
+
+        function showModal(t, d, choices) {
+            document.getElementById('evt-title').innerText = t;
+            document.getElementById('evt-desc').innerText = d;
+            let cBox = document.getElementById('evt-choices');
+            cBox.innerHTML = '';
+            choices.forEach(c => {
+                let btn = document.createElement('button');
+                btn.innerText = c.l;
+                btn.onclick = ()=>{ c.f(); document.getElementById('event-overlay').style.display='none'; updateExpUI(); };
+                cBox.appendChild(btn);
+            });
+            document.getElementById('event-overlay').style.display = 'flex';
+        }
+
+        // ==========================================
+        // 6. CORE UTILS
+        // ==========================================
+        function endExpedition() {
+            state.stash.scrap += run.loot;
             state.stash.food += run.backpack.food;
             state.stash.meds += run.backpack.meds;
+            if(state.upgrades.bed) run.hp += 10;
+            
+            state.radioBuff = null; // Clear buff
+            run.active = false;
             run.backpack = {food:0, meds:0};
-
+            
             switchView('bunker');
             document.getElementById('nav-bar').style.display = 'grid';
-            alert(`Returned! Secured ${run.loot.scrap} Scrap.`);
             saveGame();
         }
 
@@ -400,70 +521,77 @@
         }
 
         function respawn() {
-            run.backpack = {food:0, meds:0}; // Lost
+            run.active = false; run.backpack={food:0, meds:0};
+            state.radioBuff = null;
             document.getElementById('death-screen').style.display = 'none';
             switchView('bunker');
             document.getElementById('nav-bar').style.display = 'grid';
             saveGame();
         }
 
-        // --- UI UPDATERS ---
         function updateUI() {
             document.getElementById('scrap-display').innerText = state.stash.scrap;
             document.getElementById('stash-food').innerText = state.stash.food;
             document.getElementById('stash-meds').innerText = state.stash.meds;
             
             // Grid
-            let grid = document.getElementById('prep-grid');
-            grid.innerHTML = '';
+            let grid = document.getElementById('prep-grid'); grid.innerHTML = '';
             for(let i=0; i<run.backpack.food; i++) grid.innerHTML += `<div class="inv-slot filled">🥩</div>`;
             for(let i=0; i<run.backpack.meds; i++) grid.innerHTML += `<div class="inv-slot filled">💉</div>`;
-            let empty = 5 - (run.backpack.food + run.backpack.meds);
-            for(let i=0; i<empty; i++) grid.innerHTML += `<div class="inv-slot"></div>`;
+            for(let i=0; i<(5-(run.backpack.food+run.backpack.meds)); i++) grid.innerHTML += `<div class="inv-slot"></div>`;
+
+            // Dog
+            document.getElementById('dog-status').innerText = state.dog ? "Status: Active & Ready." : "Status: Missing.";
 
             // Museum
             let mList = document.getElementById('museum-list');
             mList.innerHTML = state.collection.map(id => {
                 let a = ARTIFACTS.find(x => x.id === id);
-                return `<div class="artifact-row"><span>${a.icon} ${a.name}</span><span>${a.desc}</span></div>`;
-            }).join('') || "No artifacts found.";
-
+                return `<div class="artifact-row"><span>${a.name}</span><span>${a.desc}</span></div>`;
+            }).join('') || "No artifacts.";
+            
             saveGame();
         }
 
         function updateExpUI() {
             document.getElementById('mile-display').innerText = run.mile;
             document.getElementById('exp-hp').innerText = run.hp;
-            document.getElementById('bar-hp').style.width = (run.hp/state.maxHp*100)+'%';
+            document.getElementById('bar-hp').style.width = Math.max(0, run.hp)+'%';
             document.getElementById('pack-food').innerText = run.backpack.food;
             document.getElementById('pack-meds').innerText = run.backpack.meds;
-            document.getElementById('loot-list').innerText = `${run.loot.scrap} Scrap, ${run.loot.artifacts.length} Artifacts`;
+            if(state.radioBuff) document.getElementById('active-buff-display').style.display = 'inline-block';
+            else document.getElementById('active-buff-display').style.display = 'none';
         }
 
         function updateCombatUI() {
-            let pct = Math.max(0, (combat.currentEnemyHp / combat.maxEnemyHp) * 100);
+            let pct = Math.max(0, (combat.curHp / combat.enemy.hp) * 100);
             document.getElementById('enemy-bar').style.width = pct + "%";
-            document.getElementById('enemy-hp').innerText = combat.currentEnemyHp;
-            
-            // Energy Pips
+            document.getElementById('enemy-hp').innerText = combat.curHp;
             let pips = document.getElementById('energy-pips').children;
             for(let i=0; i<3; i++) {
-                if(i < combat.energy) pips[i].classList.add('active');
-                else pips[i].classList.remove('active');
+                if(i < combat.energy) pips[i].classList.add('active'); else pips[i].classList.remove('active');
             }
+        }
+
+        function log(m, t) {
+            let d = document.createElement('div'); d.className=`msg ${t||''}`; d.innerText="> "+m;
+            document.getElementById('exp-log').prepend(d);
         }
 
         function switchView(id) {
             document.querySelectorAll('.main-view').forEach(e => e.classList.remove('active'));
             document.getElementById('view-'+id).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(e => e.classList.remove('active'));
+            // Highlight nav btn logic here if needed
             let badge = document.getElementById('badge');
             if(id === 'expedition') { badge.className='badge danger'; badge.innerText='WASTELAND'; }
             else { badge.className='badge safe'; badge.innerText='BUNKER'; }
             updateUI();
         }
 
-        function saveGame() { localStorage.setItem('wd_v12_save', JSON.stringify(state)); }
-        function resetData() { localStorage.removeItem('wd_v12_save'); location.reload(); }
+        function saveGame() { localStorage.setItem('wd_v13_save', JSON.stringify(state)); }
+        function resetData() { localStorage.removeItem('wd_v13_save'); location.reload(); }
+
     </script>
 </body>
 </html>
