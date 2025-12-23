@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wasteland Drifter v11 (Expedition)</title>
+    <title>Wasteland Drifter v12 (Combat)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
@@ -19,40 +19,24 @@
             margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* --- LAYOUT --- */
+        /* --- UI COMPONENTS --- */
         .header {
             padding: 10px 15px; background: #111; border-bottom: 1px solid var(--border);
             display: flex; justify-content: space-between; align-items: center; z-index: 10;
         }
-        .mode-badge {
-            font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; text-transform: uppercase;
-        }
-        .mode-safe { background: #003300; color: var(--primary); border: 1px solid var(--primary); }
-        .mode-danger { background: #330000; color: var(--danger); border: 1px solid var(--danger); animation: pulse 2s infinite; }
-
-        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+        .badge { font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; text-transform: uppercase; }
+        .badge.safe { background: #003300; color: var(--primary); border: 1px solid var(--primary); }
+        .badge.danger { background: #330000; color: var(--danger); border: 1px solid var(--danger); }
 
         .main-view { flex-grow: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; display: none; flex-direction: column; gap: 15px; }
         .main-view.active { display: flex; }
 
-        /* --- CARDS --- */
         .card {
             background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px;
             position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .card h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 5px; }
         
-        /* --- LOGS --- */
-        .log-box {
-            height: 200px; overflow-y: auto; background: #000; border: 1px solid #333; padding: 10px;
-            display: flex; flex-direction: column-reverse; gap: 8px; border-radius: 4px;
-        }
-        .msg { font-size: 12px; border-left: 2px solid #555; padding-left: 8px; }
-        .msg.good { border-color: var(--primary); color: #ccffcc; }
-        .msg.bad { border-color: var(--danger); color: #ffcccc; }
-        .msg.rare { border-color: var(--rare); color: #ffccff; }
-
-        /* --- BUTTONS --- */
         button {
             background: var(--card); border: 1px solid var(--border); color: var(--text);
             padding: 12px; border-radius: 4px; font-family: inherit; font-weight: bold;
@@ -61,25 +45,49 @@
         button:active { transform: scale(0.98); }
         button.primary { background: var(--primary); color: #000; border: none; }
         button.danger { background: var(--danger); color: #fff; border: none; }
-        button:disabled { opacity: 0.5; cursor: not-allowed; }
+        button:disabled { opacity: 0.3; cursor: not-allowed; }
 
-        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-
-        /* --- INVENTORY GRID --- */
+        /* --- INVENTORY & MUSEUM --- */
         .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; }
         .inv-slot {
             aspect-ratio: 1; background: #222; border: 1px solid #444; border-radius: 4px;
-            display: flex; justify-content: center; align-items: center; font-size: 20px;
-            position: relative; cursor: pointer;
+            display: flex; justify-content: center; align-items: center; font-size: 20px; cursor: pointer;
         }
         .inv-slot.filled { border-color: var(--dim); }
-        .inv-qty { position: absolute; bottom: 1px; right: 2px; font-size: 10px; color: #fff; }
-
-        /* --- MUSEUM --- */
+        
         .artifact-row { 
             display: flex; justify-content: space-between; padding: 8px; background: #1a1a1a; 
             margin-bottom: 5px; border-left: 2px solid var(--rare); font-size: 12px;
         }
+
+        /* --- COMBAT ARENA --- */
+        #combat-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.95); z-index: 50; display: none;
+            flex-direction: column; padding: 20px;
+        }
+        .enemy-box {
+            text-align: center; margin-bottom: 20px;
+            animation: float 3s infinite ease-in-out;
+        }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-10px); } 100% { transform: translateY(0px); } }
+        
+        .enemy-sprite { font-size: 60px; display: block; }
+        
+        .hp-container { width: 100%; background: #333; height: 10px; border-radius: 5px; overflow: hidden; margin-top: 5px; }
+        .hp-fill { height: 100%; width: 100%; transition: width 0.3s; }
+        .hp-enemy { background: var(--danger); }
+        .hp-player { background: var(--primary); }
+
+        .energy-pips { display: flex; justify-content: center; gap: 5px; margin: 10px 0; }
+        .pip { width: 15px; height: 15px; border-radius: 50%; background: #333; border: 1px solid #555; }
+        .pip.active { background: var(--warn); border-color: #fff; box-shadow: 0 0 5px var(--warn); }
+
+        .combat-log {
+            font-size: 12px; color: #aaa; text-align: center; height: 30px; margin-bottom: 10px;
+        }
+
+        .combat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
 
         /* --- NAV --- */
         .nav-deck {
@@ -90,11 +98,11 @@
         .nav-btn span { font-size: 18px; }
         .nav-btn.active { color: var(--primary); }
 
-        /* --- LOADING OVERLAY --- */
+        /* --- DEATH SCREEN --- */
         #death-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(50,0,0,0.9); z-index: 99; display: none;
-            flex-direction: column; justify-content: center; align-items: center;
+            background: #220000; z-index: 99; display: none;
+            flex-direction: column; justify-content: center; align-items: center; color: var(--danger);
         }
 
     </style>
@@ -102,307 +110,360 @@
 <body>
 
     <div class="header">
-        <div id="mode-badge" class="mode-badge mode-safe">BUNKER (SAFE)</div>
-        <div style="font-size: 12px;">SCRAP: <span id="scrap-display" style="color:#fff;">0</span></div>
+        <div id="badge" class="badge safe">BUNKER</div>
+        <div style="font-size: 12px;">SCRAP: <span id="scrap-display">0</span></div>
     </div>
 
     <div id="view-bunker" class="main-view active">
         <div class="card">
-            <h3>PLAN EXPEDITION</h3>
-            <p>Prepare your backpack. If you die in the wasteland, you lose what you carry.</p>
-            <div style="background:#222; padding:10px; border-radius:4px; margin-bottom:10px;">
-                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">BACKPACK (Max 5 Slots)</div>
+            <h3>PREPARE BACKPACK</h3>
+            <p>Select items to bring. Max 5.</p>
+            <div style="background:#222; padding:10px; margin-bottom:10px;">
                 <div id="prep-grid" class="inv-grid"></div>
             </div>
-            <div class="grid-2">
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px;">
                 <button onclick="addToPack('food')">+ FOOD (<span id="stash-food">0</span>)</button>
                 <button onclick="addToPack('meds')">+ MEDS (<span id="stash-meds">0</span>)</button>
             </div>
-            <button class="primary" style="margin-top:10px;" onclick="startExpedition()">LEAVE BUNKER</button>
-        </div>
-
-        <div class="card">
-            <h3>📦 STASH</h3>
-            <div style="font-size:12px; display:flex; justify-content:space-between;">
-                <span>Total Food: <span id="total-food">0</span></span>
-                <span>Total Meds: <span id="total-meds">0</span></span>
-            </div>
+            <button class="primary" style="margin-top:10px;" onclick="startExpedition()">START EXPEDITION</button>
         </div>
     </div>
 
     <div id="view-expedition" class="main-view">
-        <div class="card" style="border-color:var(--danger);">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-                <h3 style="color:var(--danger); border:none;">MILE <span id="mile-display">1</span></h3>
-                <div style="font-size:12px;">HP: <span id="hp-display">100</span>%</div>
-            </div>
-            <div class="stat-bar" style="height:4px; background:#333; margin-top:5px;"><div id="hp-bar" style="height:100%; width:100%; background:var(--danger);"></div></div>
+        <div class="card" style="border-color:var(--danger); text-align:center;">
+            <h2 style="margin:0; color:var(--danger);">MILE <span id="mile-display">0</span></h2>
+            <div style="font-size:12px; color:#aaa;">DISTANCE FROM HOME</div>
         </div>
 
-        <div id="exp-log" class="log-box"></div>
-
         <div class="card">
-            <div class="grid-2">
-                <button onclick="useItem('food')">EAT (Food: <span id="pack-food">0</span>)</button>
-                <button onclick="useItem('meds')">HEAL (Meds: <span id="pack-meds">0</span>)</button>
+            <h3>PLAYER STATUS</h3>
+            <div>HP: <span id="exp-hp">100</span>%</div>
+            <div class="hp-container"><div id="bar-hp" class="hp-fill hp-player"></div></div>
+            <div style="margin-top:10px; display:flex; justify-content:space-between; font-size:12px;">
+                <span>🎒 Food: <span id="pack-food">0</span></span>
+                <span>🎒 Meds: <span id="pack-meds">0</span></span>
             </div>
-            <div style="margin-top:10px; font-size:10px; color:#aaa; text-align:center;">LOOT COLLECTED</div>
-            <div id="loot-display" style="text-align:center; color:#fff; font-weight:bold; margin-bottom:10px;">None</div>
+        </div>
 
-            <button class="primary" id="btn-continue" onclick="nextMile()">PUSH DEEPER (Risk ++)</button>
+        <div id="exp-controls">
+            <button class="primary" onclick="nextMile()">PUSH DEEPER (Risk Combat)</button>
             <button class="danger" onclick="endExpedition()">RETURN HOME (Secure Loot)</button>
+        </div>
+        
+        <div class="card">
+            <h3>LOOT BAG</h3>
+            <div id="loot-list" style="font-size:12px; color:#fff;">Empty</div>
         </div>
     </div>
 
     <div id="view-museum" class="main-view">
         <div class="card">
-            <h3>🏛️ ARTIFACT COLLECTION</h3>
-            <p>Rare items found in the wasteland provide passive bonuses.</p>
+            <h3>🏛️ MUSEUM</h3>
             <div id="museum-list"></div>
         </div>
+    </div>
+
+    <div id="combat-overlay">
+        <h2 style="text-align:center; color:var(--danger); margin-bottom:5px;">COMBAT MODE</h2>
+        
+        <div class="card enemy-box">
+            <span id="enemy-icon" class="enemy-sprite">🐀</span>
+            <div id="enemy-name" style="font-weight:bold; color:var(--danger);">Mutant Rat</div>
+            <div class="hp-container"><div id="enemy-bar" class="hp-fill hp-enemy"></div></div>
+            <div style="font-size:12px;">HP: <span id="enemy-hp">20</span></div>
+        </div>
+
+        <div style="text-align:center; color:#fff;">YOUR ENERGY</div>
+        <div id="energy-pips" class="energy-pips">
+            <div class="pip"></div><div class="pip"></div><div class="pip"></div>
+        </div>
+        
+        <div id="combat-msg" class="combat-log">Your turn...</div>
+
+        <div class="combat-grid">
+            <button class="primary" onclick="playerAction('slash')">SLASH (1)</button>
+            <button onclick="playerAction('block')">BLOCK (1)</button>
+            <button class="danger" onclick="playerAction('heavy')">SMASH (2)</button>
+            <button onclick="useCombatItem()">HEAL (2)</button>
+        </div>
+    </div>
+
+    <div id="death-screen">
+        <h1>YOU DIED</h1>
+        <p>Your loot remains in the wastes.</p>
+        <button style="width:200px; margin-top:20px;" onclick="respawn()">RESPAWN</button>
     </div>
 
     <div class="nav-deck" id="nav-bar">
         <button class="nav-btn active" onclick="switchView('bunker')"><span>🏠</span>BUNKER</button>
         <button class="nav-btn" onclick="switchView('museum')"><span>🏛️</span>MUSEUM</button>
-        <button class="nav-btn" onclick="resetData()"><span>💀</span>RESET</button>
-    </div>
-
-    <div id="death-screen">
-        <h1 style="color:var(--danger);">YOU DIED</h1>
-        <p style="color:#aaa;">Your backpack was lost in the wastes.</p>
-        <button style="width:200px;" onclick="respawn()">WAKE UP IN BUNKER</button>
+        <button class="nav-btn" onclick="resetData()"><span>⚙️</span>RESET</button>
     </div>
 
     <script>
-        // --- GAME DATA ---
+        // --- DATA ---
+        const ENEMIES = [
+            { name: "Rad-Rat", hp: 20, dmg: 5, icon: "🐀", loot: 2 },
+            { name: "Scavenger", hp: 40, dmg: 8, icon: "👺", loot: 5 },
+            { name: "Feral Ghoul", hp: 60, dmg: 12, icon: "🧟", loot: 8 },
+            { name: "Super Mutant", hp: 100, dmg: 15, icon: "🦍", loot: 15 }
+        ];
+
         const ARTIFACTS = [
-            { id: 'coin', name: 'Old Coin', desc: '+10% Scrap Find', icon: '🪙' },
-            { id: 'compass', name: 'Gold Compass', desc: 'Lower Risk at high miles', icon: '🧭' },
-            { id: 'comic', name: 'Grognak Comic', desc: '+5 Max HP', icon: '📖' },
-            { id: 'tape', name: 'Data Holotape', desc: 'Unlock Lore', icon: '📼' }
+            { id: 'watch', name: 'Gold Watch', desc: '+Scrap Gain', icon: '⌚' },
+            { id: 'map', name: 'Old Map', desc: 'Less Combat', icon: '🗺️' }
         ];
 
         // --- STATE ---
         let state = {
             stash: { food: 5, meds: 2, scrap: 0 },
-            collection: [], // Artifact IDs
+            collection: [],
             maxHp: 100
         };
 
-        // Volatile State (Reset on death/return)
         let run = {
             active: false,
             hp: 100,
             mile: 0,
-            backpack: { food: 0, meds: 0 }, // Items brought
-            loot: { scrap: 0, artifacts: [] }, // Items found
-            log: []
+            backpack: { food: 0, meds: 0 },
+            loot: { scrap: 0, artifacts: [] }
         };
 
-        // --- INIT ---
+        let combat = {
+            active: false,
+            enemy: null,
+            maxEnemyHp: 0,
+            currentEnemyHp: 0,
+            energy: 3,
+            blocking: false
+        };
+
         window.onload = () => {
-            if(localStorage.getItem('wd_v11_save')) {
-                state = JSON.parse(localStorage.getItem('wd_v11_save'));
-            }
+            if(localStorage.getItem('wd_v12_save')) state = JSON.parse(localStorage.getItem('wd_v12_save'));
             updateUI();
         };
 
-        // --- EXPEDITION LOGIC ---
+        // --- EXPEDITION ---
         function addToPack(item) {
-            let totalPack = run.backpack.food + run.backpack.meds;
-            if(totalPack >= 5) return alert("Backpack full! (Max 5 items)");
-            
-            if(state.stash[item] > 0) {
-                state.stash[item]--;
-                run.backpack[item]++;
-                updateUI();
-            }
+            let count = run.backpack.food + run.backpack.meds;
+            if(count >= 5) return alert("Backpack Full!");
+            if(state.stash[item] > 0) { state.stash[item]--; run.backpack[item]++; updateUI(); }
         }
 
         function startExpedition() {
-            run.active = true;
-            run.hp = state.maxHp;
-            run.mile = 0;
-            run.loot = { scrap: 0, artifacts: [] };
-            run.log = ["Left the bunker..."];
+            run = { active: true, hp: state.maxHp, mile: 0, backpack: {...run.backpack}, loot: { scrap:0, artifacts:[] } };
+            // Clear stash backpack buffer
+            run.backpack.food = parseInt(document.getElementById('prep-grid').querySelectorAll('.filled').length) || run.backpack.food; // Simple sync
             
-            // Switch UI
+            switchView('expedition');
             document.getElementById('nav-bar').style.display = 'none';
-            document.getElementById('view-bunker').classList.remove('active');
-            document.getElementById('view-expedition').classList.add('active');
-            updateRunUI();
-            
-            // Auto-start Mile 1
-            nextMile();
+            updateExpUI();
         }
 
         function nextMile() {
             run.mile++;
-            let risk = run.mile * 10; // Risk increases 10% per mile
-            
-            // Artifact Bonus
-            if(hasArtifact('compass')) risk -= 10; 
+            let risk = 20 + (run.mile * 5);
+            if(state.collection.includes('map')) risk -= 10;
 
-            let roll = Math.random() * 100;
-            let msg = "";
-            let type = "";
-
-            if(roll < risk) {
-                // BAD EVENT
-                let dmg = Math.floor(Math.random() * 10) + (run.mile * 2);
-                run.hp -= dmg;
-                msg = `Mile ${run.mile}: Ambushed! Took ${dmg} damage.`;
-                type = "bad";
+            if(Math.random() * 100 < risk) {
+                // COMBAT TRIGGER
+                let enemyLevel = Math.min(Math.floor(run.mile / 3), ENEMIES.length - 1);
+                startCombat(ENEMIES[enemyLevel]);
             } else {
-                // GOOD EVENT
-                let scrapFind = Math.floor(Math.random() * 5) + (run.mile * 2);
-                // Artifact Bonus
-                if(hasArtifact('coin')) scrapFind = Math.floor(scrapFind * 1.1);
+                // LOOT EVENT
+                let find = Math.floor(Math.random() * 5) + (run.mile * 2);
+                if(state.collection.includes('watch')) find += 2;
+                run.loot.scrap += find;
                 
-                run.loot.scrap += scrapFind;
-                msg = `Mile ${run.mile}: Found ${scrapFind} Scrap.`;
-                type = "good";
-
-                // Rare Artifact Chance (Higher at deeper miles)
-                if(Math.random() < (run.mile * 0.05)) {
-                    let art = ARTIFACTS[Math.floor(Math.random() * ARTIFACTS.length)];
-                    if(!state.collection.includes(art.id) && !run.loot.artifacts.includes(art.id)) {
+                // Artifact Chance
+                if(Math.random() < 0.1 && run.mile > 3) {
+                    let art = ARTIFACTS[Math.floor(Math.random()*ARTIFACTS.length)];
+                    if(!run.loot.artifacts.includes(art.id) && !state.collection.includes(art.id)) {
                         run.loot.artifacts.push(art.id);
-                        msg = `!!! FOUND ARTIFACT: ${art.name} !!!`;
-                        type = "rare";
+                        alert(`FOUND ARTIFACT: ${art.name}`);
                     }
                 }
-            }
-
-            logRun(msg, type);
-            updateRunUI();
-
-            if(run.hp <= 0) die();
-        }
-
-        function useItem(item) {
-            if(run.backpack[item] > 0) {
-                run.backpack[item]--;
-                if(item === 'food') run.hp = Math.min(run.hp + 15, state.maxHp);
-                if(item === 'meds') run.hp = Math.min(run.hp + 40, state.maxHp);
-                logRun(`Used ${item}.`, "good");
-                updateRunUI();
+                updateExpUI();
             }
         }
 
+        // --- COMBAT SYSTEM ---
+        function startCombat(template) {
+            combat.active = true;
+            combat.enemy = template;
+            combat.maxEnemyHp = template.hp;
+            combat.currentEnemyHp = template.hp;
+            combat.energy = 3;
+            combat.blocking = false;
+
+            document.getElementById('combat-overlay').style.display = 'flex';
+            document.getElementById('enemy-name').innerText = template.name;
+            document.getElementById('enemy-icon').innerText = template.icon;
+            updateCombatUI();
+        }
+
+        function playerAction(type) {
+            let cost = (type === 'heavy' || type === 'heal') ? 2 : 1;
+            if(combat.energy < cost) {
+                document.getElementById('combat-msg').innerText = "Not enough Energy!";
+                return;
+            }
+
+            combat.energy -= cost;
+            let msg = "";
+
+            if(type === 'slash') {
+                let dmg = Math.floor(Math.random() * 5) + 5;
+                combat.currentEnemyHp -= dmg;
+                msg = `Slashed for ${dmg} dmg!`;
+            } 
+            else if(type === 'heavy') {
+                let dmg = Math.floor(Math.random() * 10) + 10;
+                combat.currentEnemyHp -= dmg;
+                msg = `SMASHED for ${dmg} dmg!`;
+            }
+            else if(type === 'block') {
+                combat.blocking = true;
+                msg = "Shields up! (-50% incoming)";
+            }
+
+            document.getElementById('combat-msg').innerText = msg;
+            updateCombatUI();
+            checkWin();
+        }
+
+        function useCombatItem() {
+            if(combat.energy < 2) return;
+            if(run.backpack.meds > 0) {
+                run.backpack.meds--;
+                run.hp = Math.min(run.hp + 40, state.maxHp);
+                combat.energy -= 2;
+                document.getElementById('combat-msg').innerText = "Healed +40 HP";
+                updateCombatUI();
+            } else {
+                document.getElementById('combat-msg').innerText = "No Meds!";
+            }
+        }
+
+        function enemyTurn() {
+            // Simple AI: Wait 1 sec then attack
+            setTimeout(() => {
+                if(combat.currentEnemyHp <= 0) return;
+                
+                let dmg = combat.enemy.dmg;
+                if(combat.blocking) dmg = Math.floor(dmg / 2);
+                
+                run.hp -= dmg;
+                combat.energy = 3; // Reset Player Energy
+                combat.blocking = false;
+                
+                document.getElementById('combat-msg').innerText = `Enemy hit you for ${dmg} dmg!`;
+                updateCombatUI();
+                
+                if(run.hp <= 0) die();
+            }, 1000);
+        }
+
+        function checkWin() {
+            if(combat.currentEnemyHp <= 0) {
+                setTimeout(() => {
+                    alert(`Victory! Looted ${combat.enemy.loot} Scrap.`);
+                    run.loot.scrap += combat.enemy.loot;
+                    document.getElementById('combat-overlay').style.display = 'none';
+                    combat.active = false;
+                    updateExpUI();
+                }, 500);
+            } else if (combat.energy <= 0) {
+                enemyTurn();
+            }
+        }
+
+        // --- CORE FUNCTIONS ---
         function endExpedition() {
-            // Secure Loot
             state.stash.scrap += run.loot.scrap;
+            run.loot.artifacts.forEach(id => { if(!state.collection.includes(id)) state.collection.push(id); });
             
-            // Unpack Leftovers
+            // Return leftovers
             state.stash.food += run.backpack.food;
             state.stash.meds += run.backpack.meds;
+            run.backpack = {food:0, meds:0};
 
-            // Secure Artifacts
-            run.loot.artifacts.forEach(id => {
-                if(!state.collection.includes(id)) state.collection.push(id);
-            });
-
-            // Reset Run
-            run.active = false;
-            run.backpack = { food: 0, meds: 0 };
-            
-            // Return to Hub
-            document.getElementById('nav-bar').style.display = 'grid';
             switchView('bunker');
-            alert(`Returned Safely!\nSecured: ${run.loot.scrap} Scrap.`);
+            document.getElementById('nav-bar').style.display = 'grid';
+            alert(`Returned! Secured ${run.loot.scrap} Scrap.`);
             saveGame();
         }
 
         function die() {
             document.getElementById('death-screen').style.display = 'flex';
+            document.getElementById('combat-overlay').style.display = 'none';
         }
 
         function respawn() {
+            run.backpack = {food:0, meds:0}; // Lost
             document.getElementById('death-screen').style.display = 'none';
-            run.active = false;
-            run.backpack = { food: 0, meds: 0 }; // Lost forever
-            document.getElementById('nav-bar').style.display = 'grid';
             switchView('bunker');
+            document.getElementById('nav-bar').style.display = 'grid';
             saveGame();
         }
 
-        // --- UI HELPERS ---
+        // --- UI UPDATERS ---
         function updateUI() {
-            // Stash
+            document.getElementById('scrap-display').innerText = state.stash.scrap;
             document.getElementById('stash-food').innerText = state.stash.food;
             document.getElementById('stash-meds').innerText = state.stash.meds;
-            document.getElementById('total-food').innerText = state.stash.food;
-            document.getElementById('total-meds').innerText = state.stash.meds;
-            document.getElementById('scrap-display').innerText = state.stash.scrap;
-
-            // Prep Grid
+            
+            // Grid
             let grid = document.getElementById('prep-grid');
             grid.innerHTML = '';
-            // Render Food
             for(let i=0; i<run.backpack.food; i++) grid.innerHTML += `<div class="inv-slot filled">🥩</div>`;
-            // Render Meds
             for(let i=0; i<run.backpack.meds; i++) grid.innerHTML += `<div class="inv-slot filled">💉</div>`;
-            // Empty Slots
-            let used = run.backpack.food + run.backpack.meds;
-            for(let i=0; i<(5-used); i++) grid.innerHTML += `<div class="inv-slot"></div>`;
+            let empty = 5 - (run.backpack.food + run.backpack.meds);
+            for(let i=0; i<empty; i++) grid.innerHTML += `<div class="inv-slot"></div>`;
 
             // Museum
             let mList = document.getElementById('museum-list');
-            mList.innerHTML = '';
-            if(state.collection.length === 0) mList.innerHTML = '<div style="text-align:center; color:#555; padding:20px;">No Artifacts Found Yet.<br>Explore deeper miles.</div>';
-            state.collection.forEach(id => {
-                let art = ARTIFACTS.find(a => a.id === id);
-                mList.innerHTML += `
-                    <div class="artifact-row">
-                        <span>${art.icon} <b>${art.name}</b></span>
-                        <span style="color:var(--primary)">${art.desc}</span>
-                    </div>`;
-            });
+            mList.innerHTML = state.collection.map(id => {
+                let a = ARTIFACTS.find(x => x.id === id);
+                return `<div class="artifact-row"><span>${a.icon} ${a.name}</span><span>${a.desc}</span></div>`;
+            }).join('') || "No artifacts found.";
 
             saveGame();
         }
 
-        function updateRunUI() {
+        function updateExpUI() {
             document.getElementById('mile-display').innerText = run.mile;
-            document.getElementById('hp-display').innerText = run.hp;
-            document.getElementById('hp-bar').style.width = (run.hp / state.maxHp * 100) + "%";
-            
+            document.getElementById('exp-hp').innerText = run.hp;
+            document.getElementById('bar-hp').style.width = (run.hp/state.maxHp*100)+'%';
             document.getElementById('pack-food').innerText = run.backpack.food;
             document.getElementById('pack-meds').innerText = run.backpack.meds;
-
-            let lootStr = `${run.loot.scrap} Scrap`;
-            if(run.loot.artifacts.length > 0) lootStr += ` + ${run.loot.artifacts.length} Artifacts`;
-            document.getElementById('loot-display').innerText = lootStr;
+            document.getElementById('loot-list').innerText = `${run.loot.scrap} Scrap, ${run.loot.artifacts.length} Artifacts`;
         }
 
-        function logRun(msg, type) {
-            let d = document.createElement('div');
-            d.className = `msg ${type||''}`;
-            d.innerText = msg;
-            document.getElementById('exp-log').prepend(d);
+        function updateCombatUI() {
+            let pct = Math.max(0, (combat.currentEnemyHp / combat.maxEnemyHp) * 100);
+            document.getElementById('enemy-bar').style.width = pct + "%";
+            document.getElementById('enemy-hp').innerText = combat.currentEnemyHp;
+            
+            // Energy Pips
+            let pips = document.getElementById('energy-pips').children;
+            for(let i=0; i<3; i++) {
+                if(i < combat.energy) pips[i].classList.add('active');
+                else pips[i].classList.remove('active');
+            }
         }
 
         function switchView(id) {
-            document.querySelectorAll('.main-view').forEach(el => el.classList.remove('active'));
+            document.querySelectorAll('.main-view').forEach(e => e.classList.remove('active'));
             document.getElementById('view-'+id).classList.add('active');
-            
-            let badge = document.getElementById('mode-badge');
-            if(id === 'expedition') {
-                badge.className = 'mode-badge mode-danger';
-                badge.innerText = "WASTELAND (DANGER)";
-            } else {
-                badge.className = 'mode-badge mode-safe';
-                badge.innerText = "BUNKER (SAFE)";
-            }
+            let badge = document.getElementById('badge');
+            if(id === 'expedition') { badge.className='badge danger'; badge.innerText='WASTELAND'; }
+            else { badge.className='badge safe'; badge.innerText='BUNKER'; }
             updateUI();
         }
 
-        function hasArtifact(id) { return state.collection.includes(id); }
-
-        function saveGame() { localStorage.setItem('wd_v11_save', JSON.stringify(state)); }
-        function resetData() { localStorage.removeItem('wd_v11_save'); location.reload(); }
+        function saveGame() { localStorage.setItem('wd_v12_save', JSON.stringify(state)); }
+        function resetData() { localStorage.removeItem('wd_v12_save'); location.reload(); }
     </script>
 </body>
 </html>
