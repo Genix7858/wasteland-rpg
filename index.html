@@ -3,362 +3,527 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wasteland Drifter Online (Stable)</title>
+    <title>Wasteland Drifter v9.3</title>
     <script src="https://cdn.jsdelivr.net/npm/gun/gun.js"></script>
     <style>
-        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
+        /* --- THEME VARIABLES --- */
         :root {
-            --bg: #0d0d0d;
-            --term: #33ff00;
-            --alert: #ff3333;
-            --warn: #ffcc00;
+            --bg: #050505;
+            --card: #141414;
+            --border: #333;
+            --primary: #00e676; 
+            --danger: #ff5252;
+            --warn: #ffab00;
+            --rare: #d500f9;
+            --text: #e0e0e0;
+            --dim: #757575;
+            --font: 'Roboto Mono', monospace;
         }
 
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
-        
+        /* Themes */
+        .theme-amber { --primary: #ffab00; --bg: #0a0500; }
+        .theme-cyan { --primary: #00b0ff; --bg: #00050a; }
+        .theme-red { --primary: #ff1744; --bg: #0a0000; }
+
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
+
         body {
-            background: var(--bg);
-            color: var(--term);
-            font-family: 'VT323', monospace;
-            font-size: 20px;
+            background-color: var(--bg);
+            color: var(--text);
+            font-family: var(--font);
             margin: 0;
             height: 100vh;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            user-select: none;
+            transition: background 0.3s;
         }
 
-        /* --- UI STYLES --- */
-        .top-bar {
-            padding: 10px;
-            border-bottom: 2px solid var(--term);
-            display: flex;
-            justify-content: space-between;
-            background: #000;
-            z-index: 10;
+        /* --- LOADING SCREEN --- */
+        #loader {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: #000; z-index: 9999;
+            display: flex; flex-direction: column; justify-content: center; align-items: center;
         }
-
-        .main-view {
-            flex-grow: 1;
-            overflow-y: auto;
-            padding: 15px;
-            padding-bottom: 80px;
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
+        .spinner {
+            width: 40px; height: 40px; border: 4px solid #333; border-top: 4px solid var(--primary);
+            border-radius: 50%; animation: spin 1s linear infinite;
         }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
+        /* --- HEADER --- */
+        .header {
+            padding: 10px 15px; background: rgba(20,20,20,0.95);
+            border-bottom: 1px solid var(--border); z-index: 10; flex-shrink: 0;
+        }
+        .stat-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
+        .stat-bar { height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
+        .stat-fill { height: 100%; width: 100%; transition: width 0.3s ease; background: var(--danger); }
+        .xp-fill { background: var(--primary); }
+
+        /* --- MAIN VIEWS --- */
+        .view-container {
+            flex-grow: 1; overflow-y: auto; padding: 15px;
+            padding-bottom: 100px; /* Space for nav */
+            display: none; flex-direction: column; gap: 15px;
+        }
+        .view-container.active { display: flex; }
+
+        /* --- CARDS --- */
         .card {
-            border: 1px solid var(--term);
-            background: #050505;
-            padding: 10px;
-            box-shadow: 0 0 5px rgba(51, 255, 0, 0.2);
-            position: relative;
+            background: var(--card); border: 1px solid var(--border);
+            border-radius: 8px; padding: 15px; position: relative;
         }
-        .card h3 { margin: 0 0 10px 0; border-bottom: 1px dashed var(--term); font-size: 22px; }
-
-        /* --- CHAT --- */
-        #chat-box {
-            height: 250px;
-            overflow-y: auto;
-            border: 1px solid #333;
-            padding: 5px;
-            margin-bottom: 5px;
-            font-size: 16px;
-            background: #000;
-        }
-        .chat-msg { margin-bottom: 4px; word-wrap: break-word; border-bottom: 1px dotted #222; }
-        .chat-name { color: var(--warn); font-weight: bold; }
-        .chat-time { font-size: 12px; color: #555; float: right; }
+        .card h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 5px; }
         
-        .chat-input-row { display: flex; gap: 5px; }
-        input { 
-            background: #000; color: var(--term); border: 1px solid var(--term); 
-            font-family: inherit; padding: 10px; font-size: 16px;
+        .msg {
+            background: var(--card); padding: 10px; border-radius: 6px;
+            border-left: 3px solid var(--dim); font-size: 12px; margin-bottom: 8px;
         }
-
-        /* --- BOSS BAR --- */
-        .boss-bar-container {
-            width: 100%; height: 25px; border: 2px solid var(--alert); 
-            background: #330000; margin-bottom: 5px; position: relative;
-        }
-        .boss-fill {
-            height: 100%; background: var(--alert); width: 100%;
-            transition: width 0.3s;
-        }
+        .msg.good { border-color: var(--primary); color: #fff; }
+        .msg.bad { border-color: var(--danger); color: #ffcccb; }
+        .msg.rare { border-color: var(--rare); background: #1a0a1a; }
 
         /* --- CONTROLS --- */
-        .btn {
-            background: #000; color: var(--term); border: 1px solid var(--term);
-            padding: 15px; font-family: inherit; font-size: 20px; cursor: pointer;
-            text-transform: uppercase; width: 100%;
+        button {
+            background: var(--card); border: 1px solid var(--border); color: var(--text);
+            padding: 12px; border-radius: 6px; font-family: inherit; font-weight: bold;
+            cursor: pointer; width: 100%; margin-top: 5px; transition: 0.2s;
+            font-size: 12px; text-transform: uppercase;
         }
-        .btn:active { background: var(--term); color: #000; }
+        button:active { transform: scale(0.98); background: #222; }
+        button.primary { background: var(--primary); color: #000; border: none; }
+        button.danger { background: var(--danger); color: #fff; border: none; }
+        
+        .loc-btn { width: auto; min-width: 80px; }
+        .loc-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
 
-        .nav {
+        /* --- NAV BAR --- */
+        .nav-deck {
             position: fixed; bottom: 0; width: 100%;
-            display: grid; grid-template-columns: 1fr 1fr 1fr;
-            background: #000; border-top: 2px solid var(--term);
+            background: rgba(10,10,10,0.95); border-top: 1px solid var(--border);
+            display: grid; grid-template-columns: repeat(4, 1fr);
+            padding: 5px; backdrop-filter: blur(5px); z-index: 20;
         }
         .nav-btn {
-            background: #000; color: #555; border: none; border-right: 1px solid #333;
-            padding: 15px; font-family: inherit; font-size: 18px; cursor: pointer;
+            background: transparent; border: none; color: var(--dim);
+            padding: 10px; display: flex; flex-direction: column; align-items: center;
+            font-size: 10px; gap: 5px;
         }
-        .nav-btn.active { color: var(--term); background: #0a0a0a; border-top: 2px solid var(--term); }
+        .nav-btn span { font-size: 18px; }
+        .nav-btn.active { color: var(--primary); }
 
-        .status-dot {
-            display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-            background: #555; margin-right: 5px;
+        /* --- MODAL --- */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.9); z-index: 100;
+            display: none; justify-content: center; align-items: center; padding: 20px;
         }
-        .online { background: #00ff00; box-shadow: 0 0 5px #00ff00; }
+        .modal-box {
+            background: var(--card); border: 2px solid var(--primary);
+            padding: 20px; width: 100%; max-width: 400px; text-align: center;
+            border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+        }
 
-        /* SCREENS */
-        .screen { display: none; }
-        .screen.active { display: block; }
+        /* --- MULTIPLAYER --- */
+        .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #555; display: inline-block; }
+        .status-dot.online { background: #00ff00; box-shadow: 0 0 5px #00ff00; }
+        #chat-box { height: 200px; overflow-y: auto; background: #000; border: 1px solid #333; padding: 5px; margin-bottom: 10px; text-align: left; }
+        .chat-msg { font-size: 12px; margin-bottom: 4px; border-bottom: 1px dotted #222; }
+        .boss-bar { width: 100%; height: 20px; background: #330000; border: 1px solid var(--danger); margin: 10px 0; }
+        .boss-fill { height: 100%; background: var(--danger); width: 100%; transition: width 0.5s; }
+
+        /* --- FLOATER ANIMATION --- */
+        .floater {
+            position: absolute; left: 50%; top: 40%; transform: translateX(-50%);
+            font-weight: bold; font-size: 20px; pointer-events: none;
+            text-shadow: 0 2px 4px #000; z-index: 100;
+            animation: floatUp 1.2s forwards;
+        }
+        @keyframes floatUp { 0% { opacity:1; transform:translate(-50%, 0); } 100% { opacity:0; transform:translate(-50%, -50px); } }
+
     </style>
 </head>
 <body>
 
-    <div class="top-bar">
-        <span>HP: <span id="hp">100</span></span>
-        <span>SCRAP: <span id="scrap">0</span></span>
+    <div id="loader">
+        <div class="spinner"></div>
+        <div style="margin-top: 20px; font-size: 14px;">SYSTEM INITIALIZING...</div>
+        <div id="error-msg" style="margin-top: 10px; color: red; font-size: 10px;"></div>
     </div>
 
-    <div id="tab-explore" class="main-view screen active">
-        <div class="card" id="log-box" style="height: 150px; overflow-y: auto;">
-            <div>> System Loaded.</div>
+    <div class="header">
+        <div class="stat-row">
+            <span>HP <span id="hp-val">100/100</span></span>
+            <span>DAY <span id="day-val">1</span></span>
+        </div>
+        <div class="stat-bar"><div class="stat-fill" id="hp-bar"></div></div>
+        
+        <div class="stat-row" style="margin-top:8px; color:var(--dim);">
+            <span>SCRAP: <span id="scrap-val" style="color:var(--text)">0</span></span>
+            <span>XP: <span id="xp-val">0</span></span>
+        </div>
+        <div class="stat-bar" style="height:3px; background:#222;"><div class="stat-fill xp-fill" id="xp-bar" style="width:0%"></div></div>
+    </div>
+
+    <div id="view-explore" class="view-container active">
+        <div id="log-feed" style="display:flex; flex-direction:column-reverse; gap:5px; min-height: 200px;">
+            <div class="msg">System Loaded.<br>Tap Explore to begin.</div>
         </div>
 
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-            <button class="btn" onclick="scavenge()">SCAVENGE</button>
-            <button class="btn" onclick="rest()">REST</button>
-        </div>
-
-        <div class="card" style="margin-top: 20px; border-color: var(--alert);">
-            <h3 style="color: var(--alert);">☠ GLOBAL BOSS</h3>
-            <div class="boss-bar-container">
-                <div id="boss-hp-bar" class="boss-fill"></div>
+        <div class="card" style="margin-top:auto; position:sticky; bottom:0;">
+            <div style="display:flex; gap:5px; margin-bottom:10px; overflow-x:auto;">
+                <button onclick="setLoc('ruins')" class="loc-btn active">🏙️ Ruins</button>
+                <button onclick="setLoc('market')" class="loc-btn">🛒 Market</button>
+                <button onclick="setLoc('base')" class="loc-btn">☢️ Base</button>
             </div>
-            <div style="text-align: center; font-size: 18px; margin-bottom: 10px;">
-                HP: <span id="boss-hp-text">Connecting...</span>
+            <button class="primary" onclick="gameLoop()">EXPLORE</button>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:5px;">
+                <button onclick="rest()">💤 Rest</button>
+                <button onclick="eat()">🥩 Eat</button>
             </div>
-            <button class="btn" style="border-color: var(--alert); color: var(--alert);" onclick="attackBoss()">ATTACK (10 HP)</button>
         </div>
     </div>
 
-    <div id="tab-radio" class="main-view screen">
+    <div id="view-workshop" class="view-container">
         <div class="card">
-            <h3>
-                <span id="status-light" class="status-dot"></span> 
-                FREQUENCY <span id="status-text" style="font-size:12px; float:right;">OFFLINE</span>
-            </h3>
-            <div id="chat-box"></div>
-            
-            <div style="margin-top: 10px; display: flex; flex-direction: column; gap: 5px;">
-                <input type="text" id="username" placeholder="Codename" style="border-color: var(--warn); color: var(--warn);">
-                <div class="chat-input-row">
-                    <input type="text" id="msg-input" placeholder="Message..." style="flex-grow:1;">
-                    <button class="btn" style="width: auto;" onclick="sendMessage()">TX</button>
-                </div>
+            <h3>🛠️ UPGRADES</h3>
+            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                <div style="font-weight:bold; color:#fff;">🛏️ Bed (15 Scrap)</div>
+                <p>Heal +5 extra HP when resting.</p>
+                <button onclick="buyUpgrade('bed', 15)">INSTALL</button>
+            </div>
+            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
+                <div style="font-weight:bold; color:#fff;">💧 Filter (30 Scrap)</div>
+                <p>Find more food/water.</p>
+                <button onclick="buyUpgrade('filter', 30)">BUILD</button>
+            </div>
+            <div>
+                <div style="font-weight:bold; color:#fff;">🛡️ Door (50 Scrap)</div>
+                <p>Take -2 Damage from enemies.</p>
+                <button onclick="buyUpgrade('door', 50)">REINFORCE</button>
             </div>
         </div>
     </div>
 
-    <div id="tab-profile" class="main-view screen">
+    <div id="view-radio" class="view-container">
         <div class="card">
-            <h3>STATUS</h3>
-            <p>Days Survived: <span id="days">1</span></p>
-            <p>Inventory: <span id="inv">Empty</span></p>
+            <h3><span id="net-status" class="status-dot"></span> FREQUENCY</h3>
+            <div id="chat-box" class="chat-box"></div>
+            <div style="display:flex; gap:5px;">
+                <input id="chat-name" placeholder="Name" style="width:30%; background:#000; border:1px solid #333; color:#fff; padding:5px;">
+                <input id="chat-msg" placeholder="Message..." style="flex-grow:1; background:#000; border:1px solid #333; color:#fff; padding:5px;">
+                <button style="width:auto;" onclick="sendChat()">TX</button>
+            </div>
         </div>
-        <div class="card" style="margin-top:10px;">
-            <h3>DEBUG</h3>
-            <button class="btn" onclick="location.reload()">RECONNECT</button>
-            <p style="font-size:12px; color:#555; margin-top:5px;">If chat stops working, click Reconnect.</p>
+
+        <div class="card" style="border-color:var(--danger);">
+            <h3 style="color:var(--danger);">☠ TITAN BOSS</h3>
+            <div class="boss-bar"><div class="boss-fill" id="boss-fill"></div></div>
+            <div style="text-align:center; margin-bottom:10px;">HP: <span id="boss-hp">Connecting...</span></div>
+            <button class="danger" onclick="attackBoss()">ATTACK (COST: 5 HP)</button>
+            <div id="dog-bonus-msg" style="display:none; color:var(--rare); font-size:10px; text-align:center; margin-top:5px;">
+                🐕 Cyber-Dog Active: +5 Damage!
+            </div>
         </div>
     </div>
 
-    <div class="nav">
-        <button class="nav-btn active" onclick="setTab('explore', this)">EXPLORE</button>
-        <button class="nav-btn" onclick="setTab('radio', this)">RADIO</button>
-        <button class="nav-btn" onclick="setTab('profile', this)">PROFILE</button>
+    <div id="view-profile" class="view-container">
+        <div class="card">
+            <h3>🎒 INVENTORY</h3>
+            <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; font-size:12px;">
+                <div style="background:#222; padding:5px;">Food: <span id="inv-food">0</span></div>
+                <div style="background:#222; padding:5px;">Meds: <span id="inv-meds">0</span></div>
+                <div style="background:#222; padding:5px;">Parts: <span id="inv-parts">0</span>/5</div>
+                <div style="background:#222; padding:5px;">Wpn: <span id="inv-wep">None</span></div>
+                <div style="background:#222; padding:5px;">Dog: <span id="inv-dog">No</span></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3>🎨 THEME</h3>
+            <div style="display:flex; gap:10px;">
+                <div style="width:20px; height:20px; background:#00e676; border-radius:50%; border:1px solid #fff;" onclick="setTheme('')"></div>
+                <div style="width:20px; height:20px; background:#ffab00; border-radius:50%; border:1px solid #fff;" onclick="setTheme('theme-amber')"></div>
+                <div style="width:20px; height:20px; background:#00b0ff; border-radius:50%; border:1px solid #fff;" onclick="setTheme('theme-cyan')"></div>
+                <div style="width:20px; height:20px; background:#ff1744; border-radius:50%; border:1px solid #fff;" onclick="setTheme('theme-red')"></div>
+            </div>
+        </div>
+        
+        <div class="card">
+            <h3>SYSTEM</h3>
+            <button class="danger" onclick="resetGame()">RESET DATA</button>
+            <div style="margin-top:10px; font-size:12px; text-align:center;">
+                <a href="https://ko-fi.com/" target="_blank" style="color:var(--primary);">Support Developer</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="nav-deck">
+        <button class="nav-btn active" onclick="setView('explore', this)"><span>🧭</span>EXPLORE</button>
+        <button class="nav-btn" onclick="setView('workshop', this)"><span>🛠️</span>SHOP</button>
+        <button class="nav-btn" onclick="setView('radio', this)"><span>📡</span>RADIO</button>
+        <button class="nav-btn" onclick="setView('profile', this)"><span>🎒</span>MENU</button>
+    </div>
+
+    <div id="modal-event" class="modal-overlay">
+        <div class="modal-box">
+            <h2 id="evt-title" style="color:var(--primary); margin-top:0;">EVENT</h2>
+            <p id="evt-desc" style="color:var(--text); margin-bottom:20px;"></p>
+            <div id="evt-choices" style="display:flex; flex-direction:column; gap:10px;"></div>
+        </div>
     </div>
 
     <script>
-        // --- MULTIPLAYER SETUP (The Fix) ---
-        // We now use a list of 3 peers. If one fails, others might work.
-        const peers = [
-            'https://gun-manhattan.herokuapp.com/gun',
-            'https://gun-us.herokuapp.com/gun',
-            'https://peer.wallie.io/gun'
-        ];
-
-        const gun = Gun({ peers: peers });
-        
-        // Specific Room Keys (Unique so they don't clash with others)
-        const APP_KEY = 'wasteland_v8_stable_';
-        const chatNode = gun.get(APP_KEY + 'chat');
-        const bossNode = gun.get(APP_KEY + 'boss');
-
-        // --- LOCAL STATE ---
-        let state = { hp: 100, maxHp: 100, scrap: 0, days: 1, inv: [] };
-        let isConnected = false;
-
-        // --- INIT ---
-        window.onload = function() {
-            // Load Local Save
-            if(localStorage.getItem('wd_stable_save')) {
-                state = JSON.parse(localStorage.getItem('wd_stable_save'));
-            }
-            updateUI();
-
-            // CHECK CONNECTION
-            // We write a random value to see if it syncs
-            log("Connecting to Global Frequency...");
-            setTimeout(() => {
-                if(!isConnected) {
-                    document.getElementById('status-text').innerText = "WEAK SIGNAL";
-                    log("Connection is slow. Be patient.");
-                }
-            }, 3000);
+        // --- GLOBAL ERROR TRAP ---
+        window.onerror = function(msg, url, line) {
+            document.getElementById('error-msg').innerText = "ERROR: " + msg;
+            return false; // Let default handler run too
         };
 
-        // --- NETWORKING EVENTS ---
-        
-        // 1. LISTEN FOR CHAT (Limit to last 10 messages visually)
-        chatNode.map().once((data, id) => {
-            if(!data || !data.msg) return;
-            // Only show messages from last 24 hours to prevent lag
-            if(data.time > Date.now() - 86400000) {
-                // Mark connected if we receive data
-                setConnected();
-                addChat(data);
+        // --- STATE & INIT ---
+        let state = {
+            hp: 100, maxHp: 100, scrap: 0, days: 1, xp: 0, maxXp: 100,
+            inv: { food: 2, meds: 1, parts: 0, weapon: null, dog: false },
+            upgrades: { bed: false, filter: false, door: false },
+            loc: 'ruins', theme: ''
+        };
+
+        const peers = ['https://gun-manhattan.herokuapp.com/gun'];
+        let gun, chatNode, bossNode, isOnline = false;
+
+        window.onload = function() {
+            try {
+                // 1. Load Save
+                const save = localStorage.getItem('wd_v93_save');
+                if(save) { state = JSON.parse(save); setTheme(state.theme); }
+                updateUI();
+
+                // 2. Init Network
+                gun = Gun({ peers: peers });
+                const APP_KEY = 'wd_v93_unified_';
+                chatNode = gun.get(APP_KEY + 'chat');
+                bossNode = gun.get(APP_KEY + 'boss');
+                
+                chatNode.map().once((d) => { if(d && d.msg && d.time > Date.now()-3600000) addChat(d); isOnline=true; updateNet(); });
+                bossNode.get('hp').on((hp) => { updateBoss(hp||1000000); isOnline=true; updateNet(); });
+
+                // 3. Hide Loader
+                setTimeout(() => { document.getElementById('loader').style.display = 'none'; }, 1000);
+
+            } catch(e) { 
+                console.error(e);
+                document.getElementById('error-msg').innerText = "Init Error: " + e.message;
             }
-        });
+        };
 
-        // 2. LISTEN FOR BOSS
-        bossNode.get('hp').on((hp) => {
-            setConnected();
-            if(hp === undefined || hp === null) hp = 500000;
-            updateBoss(hp);
-        });
-
-        function setConnected() {
-            if(isConnected) return;
-            isConnected = true;
-            document.getElementById('status-light').classList.add('online');
-            document.getElementById('status-text').innerText = "ONLINE";
-            log("Connected to Multiplayer Network.", "good");
-        }
-
-        // --- ACTIONS ---
-
-        function sendMessage() {
-            const name = document.getElementById('username').value || "Unknown";
-            const msg = document.getElementById('msg-input').value;
-            if(!msg) return;
-
-            const messageData = {
-                name: name,
-                msg: msg,
-                time: Date.now()
-            };
-
-            // Send to Gun
-            chatNode.set(messageData);
-            document.getElementById('msg-input').value = "";
-        }
-
-        function attackBoss() {
-            if(state.hp <= 10) { log("Too weak!", "bad"); return; }
-            state.hp -= 10;
-            updateUI();
-
-            // Optimistic update
-            bossNode.get('hp').once((currentHp) => {
-                let hp = currentHp || 500000;
-                let newHp = hp - 100;
-                if(newHp <= 0) {
-                    newHp = 500000; // Reset boss
-                    log("TITAN DEFEATED! IT RESPAWNS STRONGER!", "good");
-                }
-                bossNode.get('hp').put(newHp);
-                log(`Attacked Titan! HP: ${newHp}`);
-            });
-        }
-
-        // --- UI UPDATERS ---
-
-        function addChat(data) {
-            // Check if msg already exists (simple dedupe)
-            const id = `msg-${data.time}`;
-            if(document.getElementById(id)) return;
-
-            const box = document.getElementById('chat-box');
-            const div = document.createElement('div');
-            div.id = id;
-            div.className = 'chat-msg';
-            
-            // Format time
-            const date = new Date(data.time);
-            const timeStr = date.getHours() + ":" + (date.getMinutes()<10?'0':'') + date.getMinutes();
-
-            div.innerHTML = `<span class="chat-name">${data.name}</span> <span class="chat-time">${timeStr}</span><br>${data.msg}`;
-            box.appendChild(div);
-            box.scrollTop = box.scrollHeight;
-        }
-
-        function updateBoss(hp) {
-            document.getElementById('boss-hp-text').innerText = Math.floor(hp);
-            let pct = (hp / 500000) * 100;
-            document.getElementById('boss-hp-bar').style.width = pct + "%";
-        }
-
-        function scavenge() {
-            if(state.hp<=0) return;
+        // --- GAME ENGINE ---
+        function gameLoop() {
+            if(state.hp <= 0) return;
             state.days++;
-            let r = Math.random();
-            if(r < 0.3) {
-                let dmg = Math.floor(Math.random()*10)+5;
-                state.hp -= dmg;
-                log(`Danger! Took ${dmg} damage.`, "bad");
+            
+            // 25% Event Chance
+            if(Math.random() < 0.25) { triggerEvent(); return; }
+
+            // RARE: Cyber-Dog Discovery (5% chance if not owned)
+            if(!state.inv.dog && Math.random() < 0.05) {
+                triggerDogEvent();
+                return;
+            }
+
+            let risk = state.loc === 'ruins' ? 10 : (state.loc === 'market' ? 30 : 60);
+            if(Math.random() * 100 < risk) {
+                // Combat
+                let dmg = Math.floor(Math.random()*15)+5;
+                if(state.upgrades.door) dmg -= 2;
+                if(state.inv.weapon) dmg -= 5;
+                state.hp -= Math.max(0, dmg);
+                floatText(`-${dmg} HP`, 'var(--danger)');
+                log(`Attacked! Took ${dmg} dmg.`, 'bad');
             } else {
-                state.scrap += Math.floor(Math.random()*5)+1;
-                log("Found Scrap.");
+                // Loot
+                let type = Math.random();
+                if(state.upgrades.filter && type < 0.5) type = 0.6; // Filter Bonus
+
+                if(type < 0.4) {
+                    let s = Math.floor(Math.random()*5)+1;
+                    state.scrap += s;
+                    floatText(`+${s} SCRAP`, '#fff');
+                    log(`Found ${s} Scrap.`);
+                } else if(type < 0.7) {
+                    state.inv.food++;
+                    floatText("+1 FOOD", "var(--warn)");
+                    log("Found Food.", "good");
+                } else {
+                    state.inv.meds++;
+                    floatText("+1 MEDS", "var(--primary)");
+                    log("Found Medkit.", "good");
+                }
+                addXp(10);
             }
             updateUI();
         }
 
+        // --- EVENTS ---
+        function triggerEvent() {
+            const ev = [
+                {t:"Survivor", d:"Hungry survivor begs for food.", c:[
+                    {l:"Give Food", f:()=>{ 
+                        if(state.inv.food>0){state.inv.food--; state.xp+=50; log("Gave food. +XP", "good");}
+                        else{log("No food to give.", "bad");}
+                    }},
+                    {l:"Ignore", f:()=>{log("Ignored survivor.");}}
+                ]},
+                {t:"Old Safe", d:"Locked tight.", c:[
+                    {l:"Smash (-5 HP)", f:()=>{state.hp-=5; state.scrap+=10; log("Smashed safe. +10 Scrap");}},
+                    {l:"Leave", f:()=>{log("Left safe.");}}
+                ]}
+            ];
+            const e = ev[Math.floor(Math.random()*ev.length)];
+            showModal(e.t, e.d, e.c);
+        }
+
+        function triggerDogEvent() {
+            showModal("BROKEN CYBER-DOG", "A rusted robotic dog whimpers. Needs parts.", [
+                {l: "Repair (10 Scrap)", f: () => {
+                    if(state.scrap >= 10) {
+                        state.scrap -= 10;
+                        state.inv.dog = true;
+                        log("CYBER-DOG REPAIRED! +5 DAMAGE!", "rare");
+                        floatText("NEW COMPANION!", "var(--rare)");
+                    } else {
+                        log("Not enough scrap.", "bad");
+                    }
+                }},
+                {l: "Leave It", f: () => { log("Left the dog."); }}
+            ]);
+        }
+
+        function showModal(title, desc, choices) {
+            document.getElementById('evt-title').innerText = title;
+            document.getElementById('evt-desc').innerText = desc;
+            const box = document.getElementById('evt-choices');
+            box.innerHTML = '';
+            choices.forEach(c => {
+                let btn = document.createElement('button');
+                btn.innerText = c.l;
+                btn.onclick = () => { c.f(); document.getElementById('modal-event').style.display='none'; updateUI(); };
+                box.appendChild(btn);
+            });
+            document.getElementById('modal-event').style.display = 'flex';
+        }
+
+        // --- SYSTEMS ---
         function rest() {
             state.days++;
-            state.hp = Math.min(state.hp+15, state.maxHp);
-            log("Rested. HP restored.");
+            let heal = state.upgrades.bed ? 20 : 10;
+            state.hp = Math.min(state.hp + heal, state.maxHp);
+            log("Rested.", "good");
             updateUI();
         }
 
-        function log(msg, type='') {
-            const box = document.getElementById('log-box');
-            const div = document.createElement('div');
-            div.style.color = type === 'bad' ? 'var(--alert)' : (type==='good'?'var(--warn)':'var(--term)');
-            div.innerText = `> ${msg}`;
-            box.prepend(div);
+        function eat() {
+            if(state.inv.food > 0) {
+                state.inv.food--;
+                state.hp = Math.min(state.hp+15, state.maxHp);
+                floatText("+15 HP", "var(--primary)");
+                updateUI();
+            }
         }
 
+        function buyUpgrade(id, cost) {
+            if(state.upgrades[id]) return log("Owned!", "bad");
+            if(state.scrap >= cost) {
+                state.scrap -= cost;
+                state.upgrades[id] = true;
+                log("Upgraded!", "good");
+                updateUI();
+            }
+        }
+
+        // --- MULTIPLAYER ---
+        function sendChat() {
+            let m = document.getElementById('chat-msg').value;
+            let n = document.getElementById('chat-name').value || "Anon";
+            if(m && chatNode) {
+                chatNode.set({name:n, msg:m, time:Date.now()});
+                document.getElementById('chat-msg').value = '';
+            }
+        }
+        function addChat(d) {
+            let id = 'm-'+d.time;
+            if(document.getElementById(id)) return;
+            let div = document.createElement('div'); div.id=id; div.className='chat-msg';
+            div.innerHTML = `<span style="color:var(--primary)">${d.name}</span>: ${d.msg}`;
+            document.getElementById('chat-box').prepend(div);
+        }
+        function attackBoss() {
+            if(state.hp <= 5) return log("Too weak!", "bad");
+            state.hp -= 5;
+            
+            let dmg = 10;
+            if(state.inv.dog) dmg += 5; // Cyber-Dog Bonus
+
+            floatText(`-${dmg} BOSS HP`, "var(--danger)");
+            
+            if(bossNode) {
+                bossNode.get('hp').once(h => {
+                    let nh = (h||1000000) - dmg;
+                    if(nh<=0) nh=1000000;
+                    bossNode.get('hp').put(nh);
+                });
+            }
+            updateUI();
+        }
+        function updateBoss(hp) {
+            document.getElementById('boss-hp').innerText = hp;
+            document.getElementById('boss-fill').style.width = (hp/1000000*100)+'%';
+        }
+        function updateNet() { if(isOnline) document.getElementById('net-status').classList.add('online'); }
+
+        // --- UTILS ---
+        function setView(v, b) {
+            document.querySelectorAll('.view-container').forEach(e=>e.classList.remove('active'));
+            document.getElementById('view-'+v).classList.add('active');
+            document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
+            b.classList.add('active');
+        }
+        function setLoc(l) { state.loc = l; document.querySelectorAll('.loc-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); }
+        function setTheme(t) { document.body.className=t; state.theme=t; saveGame(); }
+        function addXp(n) { state.xp += n; if(state.xp>=state.maxXp) { state.xp=0; state.maxXp+=50; state.maxHp+=10; floatText("LEVEL UP!", "gold"); } }
+        function floatText(t, c) {
+            let el = document.createElement('div'); el.className='floater'; el.innerText=t; el.style.color=c;
+            document.body.appendChild(el); setTimeout(()=>el.remove(), 1200);
+        }
+        function log(m, t='') {
+            let d = document.createElement('div'); d.className=`msg ${t}`; d.innerText="> "+m;
+            document.getElementById('log-feed').prepend(d);
+        }
         function updateUI() {
-            if(state.hp <= 0) state.hp = 0;
-            document.getElementById('hp').innerText = state.hp;
-            document.getElementById('scrap').innerText = state.scrap;
-            document.getElementById('days').innerText = state.days;
-            localStorage.setItem('wd_stable_save', JSON.stringify(state));
-        }
+            if(state.hp<=0) { 
+                alert("YOU DIED. SURVIVED " + state.days + " DAYS."); 
+                resetGame(); 
+                return; 
+            }
+            document.getElementById('hp-val').innerText = state.hp;
+            document.getElementById('hp-bar').style.width = (state.hp/state.maxHp*100)+'%';
+            document.getElementById('scrap-val').innerText = state.scrap;
+            document.getElementById('xp-bar').style.width = (state.xp/state.maxXp*100)+'%';
+            document.getElementById('day-val').innerText = state.days;
+            
+            document.getElementById('inv-food').innerText = state.inv.food;
+            document.getElementById('inv-meds').innerText = state.inv.meds;
+            document.getElementById('inv-parts').innerText = state.inv.parts;
+            document.getElementById('inv-wep').innerText = state.inv.weapon || "None";
+            document.getElementById('inv-dog').innerText = state.inv.dog ? "YES" : "NO";
+            
+            if(state.inv.dog) document.getElementById('dog-bonus-msg').style.display = 'block';
 
-        function setTab(id, btn) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('tab-' + id).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
-            btn.classList.add('active');
+            localStorage.setItem('wd_v93_save', JSON.stringify(state));
         }
+        function resetGame() { localStorage.removeItem('wd_v93_save'); location.reload(); }
     </script>
 </body>
 </html>
