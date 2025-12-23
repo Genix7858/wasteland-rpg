@@ -3,127 +3,98 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Wasteland Drifter v10 (Final)</title>
+    <title>Wasteland Drifter v11 (Expedition)</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap');
 
-        /* --- THEME --- */
         :root {
-            --bg: #050505;
-            --card: #141414;
-            --border: #333;
-            --primary: #00e676; 
-            --danger: #ff5252;
-            --warn: #ffab00;
-            --rare: #d500f9;
-            --text: #e0e0e0;
-            --dim: #757575;
+            --bg: #050505; --card: #141414; --border: #333;
+            --primary: #00e676; --danger: #ff5252; --warn: #ffab00; --rare: #d500f9;
+            --text: #e0e0e0; --dim: #757575;
             --font: 'Roboto Mono', monospace;
         }
 
-        /* Alternate Themes */
-        .theme-amber { --primary: #ffab00; --bg: #0a0500; }
-        .theme-cyan { --primary: #00b0ff; --bg: #00050a; }
-        .theme-red { --primary: #ff1744; --bg: #0a0000; }
-
-        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; user-select: none; }
-
         body {
-            background-color: var(--bg);
-            color: var(--text);
-            font-family: var(--font);
-            margin: 0;
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            transition: background 0.3s;
+            background-color: var(--bg); color: var(--text); font-family: var(--font);
+            margin: 0; height: 100vh; display: flex; flex-direction: column; overflow: hidden;
         }
 
-        /* --- UI COMPONENTS --- */
+        /* --- LAYOUT --- */
         .header {
-            padding: 10px 15px; background: rgba(20,20,20,0.98);
-            border-bottom: 1px solid var(--border); z-index: 10; flex-shrink: 0;
+            padding: 10px 15px; background: #111; border-bottom: 1px solid var(--border);
+            display: flex; justify-content: space-between; align-items: center; z-index: 10;
         }
-        .stat-row { display: flex; justify-content: space-between; font-size: 13px; font-weight: bold; margin-bottom: 5px; }
-        .stat-bar { height: 6px; background: #333; border-radius: 3px; overflow: hidden; }
-        .stat-fill { height: 100%; width: 100%; transition: width 0.3s ease; background: var(--danger); }
-        .xp-fill { background: var(--primary); }
-
-        .view-container {
-            flex-grow: 1; overflow-y: auto; padding: 15px;
-            padding-bottom: 100px; /* Space for nav */
-            display: none; flex-direction: column; gap: 15px;
+        .mode-badge {
+            font-size: 10px; padding: 4px 8px; border-radius: 4px; font-weight: bold; text-transform: uppercase;
         }
-        .view-container.active { display: flex; }
+        .mode-safe { background: #003300; color: var(--primary); border: 1px solid var(--primary); }
+        .mode-danger { background: #330000; color: var(--danger); border: 1px solid var(--danger); animation: pulse 2s infinite; }
 
+        @keyframes pulse { 0% { opacity: 1; } 50% { opacity: 0.7; } 100% { opacity: 1; } }
+
+        .main-view { flex-grow: 1; overflow-y: auto; padding: 15px; padding-bottom: 80px; display: none; flex-direction: column; gap: 15px; }
+        .main-view.active { display: flex; }
+
+        /* --- CARDS --- */
         .card {
-            background: var(--card); border: 1px solid var(--border);
-            border-radius: 8px; padding: 15px; position: relative;
+            background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 15px;
+            position: relative; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .card h3 { margin: 0 0 10px 0; color: var(--primary); font-size: 16px; border-bottom: 1px solid #333; padding-bottom: 5px; }
-        .card p { font-size: 12px; color: var(--dim); margin: 0 0 10px 0; }
-
+        
         /* --- LOGS --- */
-        .msg {
-            background: var(--card); padding: 10px; border-radius: 6px;
-            border-left: 3px solid var(--dim); font-size: 12px; margin-bottom: 8px;
-            animation: slideUp 0.3s ease-out;
+        .log-box {
+            height: 200px; overflow-y: auto; background: #000; border: 1px solid #333; padding: 10px;
+            display: flex; flex-direction: column-reverse; gap: 8px; border-radius: 4px;
         }
-        @keyframes slideUp { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
-        .msg.good { border-color: var(--primary); color: #fff; }
-        .msg.bad { border-color: var(--danger); color: #ffcccb; }
-        .msg.rare { border-color: var(--rare); background: #1a0a1a; }
-        .msg.story { border-color: var(--warn); color: var(--warn); }
+        .msg { font-size: 12px; border-left: 2px solid #555; padding-left: 8px; }
+        .msg.good { border-color: var(--primary); color: #ccffcc; }
+        .msg.bad { border-color: var(--danger); color: #ffcccc; }
+        .msg.rare { border-color: var(--rare); color: #ffccff; }
 
-        /* --- FLOATER --- */
-        .floater {
-            position: absolute; left: 50%; top: 40%; transform: translateX(-50%);
-            font-weight: bold; font-size: 20px; pointer-events: none;
-            text-shadow: 0 2px 4px #000; z-index: 100;
-            animation: floatUp 1.2s forwards;
-        }
-        @keyframes floatUp { 0% { opacity:1; transform:translate(-50%, 0); } 100% { opacity:0; transform:translate(-50%, -50px); } }
-
-        /* --- CONTROLS --- */
+        /* --- BUTTONS --- */
         button {
             background: var(--card); border: 1px solid var(--border); color: var(--text);
-            padding: 12px; border-radius: 6px; font-family: inherit; font-weight: bold;
-            cursor: pointer; width: 100%; margin-top: 5px; transition: 0.2s;
-            font-size: 12px; text-transform: uppercase;
+            padding: 12px; border-radius: 4px; font-family: inherit; font-weight: bold;
+            cursor: pointer; width: 100%; text-transform: uppercase; font-size: 12px; transition: 0.2s;
         }
-        button:active { transform: scale(0.98); background: #222; }
+        button:active { transform: scale(0.98); }
         button.primary { background: var(--primary); color: #000; border: none; }
         button.danger { background: var(--danger); color: #fff; border: none; }
-        
-        .loc-btn { width: auto; min-width: 80px; }
-        .loc-btn.active { background: var(--primary); color: #000; border-color: var(--primary); }
+        button:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* --- NAV DECK --- */
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+        /* --- INVENTORY GRID --- */
+        .inv-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 5px; margin-top: 10px; }
+        .inv-slot {
+            aspect-ratio: 1; background: #222; border: 1px solid #444; border-radius: 4px;
+            display: flex; justify-content: center; align-items: center; font-size: 20px;
+            position: relative; cursor: pointer;
+        }
+        .inv-slot.filled { border-color: var(--dim); }
+        .inv-qty { position: absolute; bottom: 1px; right: 2px; font-size: 10px; color: #fff; }
+
+        /* --- MUSEUM --- */
+        .artifact-row { 
+            display: flex; justify-content: space-between; padding: 8px; background: #1a1a1a; 
+            margin-bottom: 5px; border-left: 2px solid var(--rare); font-size: 12px;
+        }
+
+        /* --- NAV --- */
         .nav-deck {
-            position: fixed; bottom: 0; width: 100%;
-            background: rgba(10,10,10,0.95); border-top: 1px solid var(--border);
-            display: grid; grid-template-columns: repeat(4, 1fr);
-            padding: 5px; backdrop-filter: blur(5px); z-index: 20;
+            position: fixed; bottom: 0; width: 100%; background: #080808; border-top: 1px solid #333;
+            display: grid; grid-template-columns: 1fr 1fr 1fr; height: 60px; z-index: 20;
         }
-        .nav-btn {
-            background: transparent; border: none; color: var(--dim);
-            padding: 10px; display: flex; flex-direction: column; align-items: center;
-            font-size: 10px; gap: 5px;
-        }
+        .nav-btn { background: none; border: none; color: #555; display: flex; flex-direction: column; align-items: center; justify-content: center; font-size: 10px; gap: 4px; }
         .nav-btn span { font-size: 18px; }
         .nav-btn.active { color: var(--primary); }
 
-        /* --- MODAL --- */
-        .modal-overlay {
+        /* --- LOADING OVERLAY --- */
+        #death-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 100;
-            display: none; justify-content: center; align-items: center; padding: 20px;
-        }
-        .modal-box {
-            background: var(--card); border: 2px solid var(--primary);
-            padding: 20px; width: 100%; max-width: 400px; text-align: center;
-            border-radius: 10px; box-shadow: 0 0 30px rgba(0,0,0,0.8);
+            background: rgba(50,0,0,0.9); z-index: 99; display: none;
+            flex-direction: column; justify-content: center; align-items: center;
         }
 
     </style>
@@ -131,349 +102,307 @@
 <body>
 
     <div class="header">
-        <div class="stat-row">
-            <span>HP <span id="hp-val">100/100</span></span>
-            <span>DAY <span id="day-val">1</span></span>
-        </div>
-        <div class="stat-bar"><div class="stat-fill" id="hp-bar"></div></div>
-        
-        <div class="stat-row" style="margin-top:8px; color:var(--dim);">
-            <span>SCRAP: <span id="scrap-val" style="color:var(--text)">0</span></span>
-            <span>XP: <span id="xp-val">0</span></span>
-        </div>
-        <div class="stat-bar" style="height:3px; background:#222;"><div class="stat-fill xp-fill" id="xp-bar" style="width:0%"></div></div>
+        <div id="mode-badge" class="mode-badge mode-safe">BUNKER (SAFE)</div>
+        <div style="font-size: 12px;">SCRAP: <span id="scrap-display" style="color:#fff;">0</span></div>
     </div>
 
-    <div id="view-explore" class="view-container active">
-        <div id="log-feed" style="display:flex; flex-direction:column-reverse; gap:5px; min-height: 200px;">
-            <div class="msg">System Loaded.<br>Tap Explore to begin.</div>
+    <div id="view-bunker" class="main-view active">
+        <div class="card">
+            <h3>PLAN EXPEDITION</h3>
+            <p>Prepare your backpack. If you die in the wasteland, you lose what you carry.</p>
+            <div style="background:#222; padding:10px; border-radius:4px; margin-bottom:10px;">
+                <div style="font-size:10px; color:#aaa; margin-bottom:5px;">BACKPACK (Max 5 Slots)</div>
+                <div id="prep-grid" class="inv-grid"></div>
+            </div>
+            <div class="grid-2">
+                <button onclick="addToPack('food')">+ FOOD (<span id="stash-food">0</span>)</button>
+                <button onclick="addToPack('meds')">+ MEDS (<span id="stash-meds">0</span>)</button>
+            </div>
+            <button class="primary" style="margin-top:10px;" onclick="startExpedition()">LEAVE BUNKER</button>
         </div>
 
-        <div class="card" style="margin-top:auto; position:sticky; bottom:0;">
-            <div style="display:flex; gap:5px; margin-bottom:10px; overflow-x:auto;">
-                <button onclick="setLoc('ruins')" class="loc-btn active">🏙️ Ruins</button>
-                <button onclick="setLoc('market')" class="loc-btn">🛒 Market</button>
-                <button onclick="setLoc('base')" class="loc-btn">☢️ Base</button>
-            </div>
-            <button class="primary" onclick="gameLoop()">EXPLORE</button>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-top:5px;">
-                <button onclick="rest()">💤 Rest</button>
-                <button onclick="eat()">🥩 Eat</button>
+        <div class="card">
+            <h3>📦 STASH</h3>
+            <div style="font-size:12px; display:flex; justify-content:space-between;">
+                <span>Total Food: <span id="total-food">0</span></span>
+                <span>Total Meds: <span id="total-meds">0</span></span>
             </div>
         </div>
     </div>
 
-    <div id="view-workshop" class="view-container">
+    <div id="view-expedition" class="main-view">
+        <div class="card" style="border-color:var(--danger);">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <h3 style="color:var(--danger); border:none;">MILE <span id="mile-display">1</span></h3>
+                <div style="font-size:12px;">HP: <span id="hp-display">100</span>%</div>
+            </div>
+            <div class="stat-bar" style="height:4px; background:#333; margin-top:5px;"><div id="hp-bar" style="height:100%; width:100%; background:var(--danger);"></div></div>
+        </div>
+
+        <div id="exp-log" class="log-box"></div>
+
         <div class="card">
-            <h3>🛠️ UPGRADES</h3>
-            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-                <div style="font-weight:bold; color:#fff;">🛏️ Bed (15 Scrap)</div>
-                <p>Heal +5 extra HP when resting.</p>
-                <button onclick="buyUpgrade('bed', 15)">INSTALL</button>
+            <div class="grid-2">
+                <button onclick="useItem('food')">EAT (Food: <span id="pack-food">0</span>)</button>
+                <button onclick="useItem('meds')">HEAL (Meds: <span id="pack-meds">0</span>)</button>
             </div>
-            <div style="margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-                <div style="font-weight:bold; color:#fff;">💧 Filter (30 Scrap)</div>
-                <p>Find more food/water.</p>
-                <button onclick="buyUpgrade('filter', 30)">BUILD</button>
-            </div>
-            <div>
-                <div style="font-weight:bold; color:#fff;">🛡️ Door (50 Scrap)</div>
-                <p>Take -2 Damage from enemies.</p>
-                <button onclick="buyUpgrade('door', 50)">REINFORCE</button>
-            </div>
+            <div style="margin-top:10px; font-size:10px; color:#aaa; text-align:center;">LOOT COLLECTED</div>
+            <div id="loot-display" style="text-align:center; color:#fff; font-weight:bold; margin-bottom:10px;">None</div>
+
+            <button class="primary" id="btn-continue" onclick="nextMile()">PUSH DEEPER (Risk ++)</button>
+            <button class="danger" onclick="endExpedition()">RETURN HOME (Secure Loot)</button>
         </div>
     </div>
 
-    <div id="view-radio" class="view-container">
+    <div id="view-museum" class="main-view">
         <div class="card">
-            <h3>📡 SIGNAL SCANNER</h3>
-            <p>Scan frequencies to intercept supply drops or lore.</p>
-            <button class="primary" onclick="scanRadio()">SCAN FREQUENCY (COST: 1 ENERGY)</button>
-            <div id="scan-result" style="margin-top:15px; font-size:12px; color:var(--text); min-height:40px;">
-                Ready to scan...
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>📜 BROADCAST LOG</h3>
-            <div id="radio-log" style="font-size:12px; color:var(--dim);"></div>
+            <h3>🏛️ ARTIFACT COLLECTION</h3>
+            <p>Rare items found in the wasteland provide passive bonuses.</p>
+            <div id="museum-list"></div>
         </div>
     </div>
 
-    <div id="view-profile" class="view-container">
-        <div class="card">
-            <h3>🎒 INVENTORY</h3>
-            <div style="display:grid; grid-template-columns:1fr 1fr; gap:5px; font-size:12px;">
-                <div style="background:#222; padding:5px;">Food: <span id="inv-food">0</span></div>
-                <div style="background:#222; padding:5px;">Meds: <span id="inv-meds">0</span></div>
-                <div style="background:#222; padding:5px;">Parts: <span id="inv-parts">0</span>/5</div>
-                <div style="background:#222; padding:5px;">Wpn: <span id="inv-wep">None</span></div>
-                <div style="background:#222; padding:5px;">Dog: <span id="inv-dog">No</span></div>
-            </div>
-        </div>
-
-        <div class="card">
-            <h3>🎨 THEME</h3>
-            <div style="display:flex; gap:10px;">
-                <div style="width:20px; height:20px; background:#00e676; border-radius:50%; border:1px solid #fff;" onclick="setTheme('')"></div>
-                <div style="width:20px; height:20px; background:#ffab00; border-radius:50%; border:1px solid #fff;" onclick="setTheme('theme-amber')"></div>
-                <div style="width:20px; height:20px; background:#00b0ff; border-radius:50%; border:1px solid #fff;" onclick="setTheme('theme-cyan')"></div>
-                <div style="width:20px; height:20px; background:#ff1744; border-radius:50%; border:1px solid #fff;" onclick="setTheme('theme-red')"></div>
-            </div>
-        </div>
-        
-        <div class="card">
-            <h3>SYSTEM</h3>
-            <button class="danger" onclick="resetGame()">RESET DATA</button>
-            <div style="margin-top:10px; font-size:12px; text-align:center;">
-                <a href="https://ko-fi.com/" target="_blank" style="color:var(--primary);">Support Developer</a>
-            </div>
-        </div>
+    <div class="nav-deck" id="nav-bar">
+        <button class="nav-btn active" onclick="switchView('bunker')"><span>🏠</span>BUNKER</button>
+        <button class="nav-btn" onclick="switchView('museum')"><span>🏛️</span>MUSEUM</button>
+        <button class="nav-btn" onclick="resetData()"><span>💀</span>RESET</button>
     </div>
 
-    <div class="nav-deck">
-        <button class="nav-btn active" onclick="setView('explore', this)"><span>🧭</span>EXPLORE</button>
-        <button class="nav-btn" onclick="setView('workshop', this)"><span>🛠️</span>SHOP</button>
-        <button class="nav-btn" onclick="setView('radio', this)"><span>📡</span>RADIO</button>
-        <button class="nav-btn" onclick="setView('profile', this)"><span>🎒</span>MENU</button>
-    </div>
-
-    <div id="modal-event" class="modal-overlay">
-        <div class="modal-box">
-            <h2 id="evt-title" style="color:var(--primary); margin-top:0;">EVENT</h2>
-            <p id="evt-desc" style="color:var(--text); margin-bottom:20px;"></p>
-            <div id="evt-choices" style="display:flex; flex-direction:column; gap:10px;"></div>
-        </div>
+    <div id="death-screen">
+        <h1 style="color:var(--danger);">YOU DIED</h1>
+        <p style="color:#aaa;">Your backpack was lost in the wastes.</p>
+        <button style="width:200px;" onclick="respawn()">WAKE UP IN BUNKER</button>
     </div>
 
     <script>
-        // --- STATE & INIT ---
+        // --- GAME DATA ---
+        const ARTIFACTS = [
+            { id: 'coin', name: 'Old Coin', desc: '+10% Scrap Find', icon: '🪙' },
+            { id: 'compass', name: 'Gold Compass', desc: 'Lower Risk at high miles', icon: '🧭' },
+            { id: 'comic', name: 'Grognak Comic', desc: '+5 Max HP', icon: '📖' },
+            { id: 'tape', name: 'Data Holotape', desc: 'Unlock Lore', icon: '📼' }
+        ];
+
+        // --- STATE ---
         let state = {
-            hp: 100, maxHp: 100, scrap: 0, days: 1, xp: 0, maxXp: 100,
-            inv: { food: 2, meds: 1, parts: 0, weapon: null, dog: false },
-            upgrades: { bed: false, filter: false, door: false },
-            loc: 'ruins', theme: '', buff: null
+            stash: { food: 5, meds: 2, scrap: 0 },
+            collection: [], // Artifact IDs
+            maxHp: 100
         };
 
-        window.onload = function() {
-            try {
-                const save = localStorage.getItem('wd_v10_save');
-                if(save) { state = JSON.parse(save); setTheme(state.theme); }
-                updateUI();
-            } catch(e) { console.error(e); }
+        // Volatile State (Reset on death/return)
+        let run = {
+            active: false,
+            hp: 100,
+            mile: 0,
+            backpack: { food: 0, meds: 0 }, // Items brought
+            loot: { scrap: 0, artifacts: [] }, // Items found
+            log: []
         };
 
-        // --- GAME ENGINE ---
-        function gameLoop() {
-            if(state.hp <= 0) return;
-            state.days++;
-            
-            // Event Chance
-            if(Math.random() < 0.25) { triggerEvent(); return; }
-
-            // RARE: Cyber-Dog Discovery
-            if(!state.inv.dog && Math.random() < 0.05) { triggerDogEvent(); return; }
-
-            let risk = state.loc === 'ruins' ? 10 : (state.loc === 'market' ? 30 : 60);
-            
-            // Check Scan Buff
-            if(state.buff === 'safe') { risk = 0; log("Radio Signal kept you safe!", "good"); state.buff=null; }
-            if(state.buff === 'loot') { risk = 0; log("Radio Signal led to loot!", "good"); }
-
-            if(Math.random() * 100 < risk) {
-                // Combat
-                let dmg = Math.floor(Math.random()*15)+5;
-                if(state.upgrades.door) dmg -= 2;
-                if(state.inv.weapon) dmg -= 5;
-                if(state.inv.dog) dmg -= 3;
-                
-                let taken = Math.max(0, dmg);
-                state.hp -= taken;
-                floatText(`-${taken} HP`, 'var(--danger)');
-                log(`Attacked! Took ${taken} dmg.`, 'bad');
-            } else {
-                // Loot
-                let type = Math.random();
-                if(state.upgrades.filter) type -= 0.1; // Filter Bonus
-                if(state.buff === 'loot') type -= 0.2; // Radio Bonus
-
-                if(type < 0.4) {
-                    let s = Math.floor(Math.random()*5)+1;
-                    if(state.buff === 'loot') s *= 2; // Double scrap
-                    state.scrap += s;
-                    floatText(`+${s} SCRAP`, '#fff');
-                    log(`Found ${s} Scrap.`);
-                } else if(type < 0.7) {
-                    state.inv.food++;
-                    floatText("+1 FOOD", "var(--warn)");
-                    log("Found Food.", "good");
-                } else {
-                    state.inv.meds++;
-                    floatText("+1 MEDS", "var(--primary)");
-                    log("Found Medkit.", "good");
-                }
-                
-                // Radio Parts Check
-                if(state.loc === 'base' && Math.random() > 0.7) {
-                    state.inv.parts++;
-                    log("FOUND RADIO PART!", "rare");
-                    if(state.inv.parts >= 5) alert("VICTORY! You repaired the transmitter and called for help!");
-                }
-                
-                if(state.buff === 'loot') state.buff = null;
-                addXp(10);
+        // --- INIT ---
+        window.onload = () => {
+            if(localStorage.getItem('wd_v11_save')) {
+                state = JSON.parse(localStorage.getItem('wd_v11_save'));
             }
             updateUI();
+        };
+
+        // --- EXPEDITION LOGIC ---
+        function addToPack(item) {
+            let totalPack = run.backpack.food + run.backpack.meds;
+            if(totalPack >= 5) return alert("Backpack full! (Max 5 items)");
+            
+            if(state.stash[item] > 0) {
+                state.stash[item]--;
+                run.backpack[item]++;
+                updateUI();
+            }
         }
 
-        // --- RADIO SCANNER (New Feature) ---
-        function scanRadio() {
-            let roll = Math.random();
+        function startExpedition() {
+            run.active = true;
+            run.hp = state.maxHp;
+            run.mile = 0;
+            run.loot = { scrap: 0, artifacts: [] };
+            run.log = ["Left the bunker..."];
+            
+            // Switch UI
+            document.getElementById('nav-bar').style.display = 'none';
+            document.getElementById('view-bunker').classList.remove('active');
+            document.getElementById('view-expedition').classList.add('active');
+            updateRunUI();
+            
+            // Auto-start Mile 1
+            nextMile();
+        }
+
+        function nextMile() {
+            run.mile++;
+            let risk = run.mile * 10; // Risk increases 10% per mile
+            
+            // Artifact Bonus
+            if(hasArtifact('compass')) risk -= 10; 
+
+            let roll = Math.random() * 100;
             let msg = "";
-            let resDiv = document.getElementById('scan-result');
-            
-            if(roll < 0.3) {
-                msg = "Static... nothing found.";
-                resDiv.style.color = "var(--dim)";
-            } else if(roll < 0.6) {
-                msg = "Intercepted Raider comms. They are avoiding the Market.";
-                resDiv.style.color = "var(--primary)";
-                state.buff = 'safe';
-                log("BUFF: Next explore is safe.", "good");
-            } else if(roll < 0.8) {
-                msg = "Supply Drop coordinates received!";
-                resDiv.style.color = "var(--warn)";
-                state.buff = 'loot';
-                log("BUFF: Next explore has 2x Scrap.", "good");
+            let type = "";
+
+            if(roll < risk) {
+                // BAD EVENT
+                let dmg = Math.floor(Math.random() * 10) + (run.mile * 2);
+                run.hp -= dmg;
+                msg = `Mile ${run.mile}: Ambushed! Took ${dmg} damage.`;
+                type = "bad";
             } else {
-                msg = "LORE: 'Day 402... The water is turning black...'";
-                resDiv.style.color = "var(--rare)";
-                addXp(20);
-            }
-            resDiv.innerText = msg;
-            
-            // Log History
-            let d = document.createElement('div');
-            d.innerText = "> " + msg;
-            document.getElementById('radio-log').prepend(d);
-        }
+                // GOOD EVENT
+                let scrapFind = Math.floor(Math.random() * 5) + (run.mile * 2);
+                // Artifact Bonus
+                if(hasArtifact('coin')) scrapFind = Math.floor(scrapFind * 1.1);
+                
+                run.loot.scrap += scrapFind;
+                msg = `Mile ${run.mile}: Found ${scrapFind} Scrap.`;
+                type = "good";
 
-        // --- EVENTS ---
-        function triggerEvent() {
-            const ev = [
-                {t:"Survivor", d:"Hungry survivor begs for food.", c:[
-                    {l:"Give Food", f:()=>{ 
-                        if(state.inv.food>0){state.inv.food--; state.xp+=50; log("Gave food. +XP", "good");}
-                        else{log("No food to give.", "bad");}
-                    }},
-                    {l:"Ignore", f:()=>{log("Ignored survivor.");}}
-                ]},
-                {t:"Old Safe", d:"Locked tight.", c:[
-                    {l:"Smash (-5 HP)", f:()=>{state.hp-=5; state.scrap+=10; log("Smashed safe. +10 Scrap");}},
-                    {l:"Leave", f:()=>{log("Left safe.");}}
-                ]}
-            ];
-            const e = ev[Math.floor(Math.random()*ev.length)];
-            showModal(e.t, e.d, e.c);
-        }
-
-        function triggerDogEvent() {
-            showModal("BROKEN CYBER-DOG", "A rusted robotic dog whimpers. Needs parts.", [
-                {l: "Repair (10 Scrap)", f: () => {
-                    if(state.scrap >= 10) {
-                        state.scrap -= 10;
-                        state.inv.dog = true;
-                        log("CYBER-DOG REPAIRED! +DEFENSE!", "rare");
-                        floatText("NEW COMPANION!", "var(--rare)");
-                    } else {
-                        log("Not enough scrap.", "bad");
+                // Rare Artifact Chance (Higher at deeper miles)
+                if(Math.random() < (run.mile * 0.05)) {
+                    let art = ARTIFACTS[Math.floor(Math.random() * ARTIFACTS.length)];
+                    if(!state.collection.includes(art.id) && !run.loot.artifacts.includes(art.id)) {
+                        run.loot.artifacts.push(art.id);
+                        msg = `!!! FOUND ARTIFACT: ${art.name} !!!`;
+                        type = "rare";
                     }
-                }},
-                {l: "Leave It", f: () => { log("Left the dog."); }}
-            ]);
+                }
+            }
+
+            logRun(msg, type);
+            updateRunUI();
+
+            if(run.hp <= 0) die();
         }
 
-        function showModal(title, desc, choices) {
-            document.getElementById('evt-title').innerText = title;
-            document.getElementById('evt-desc').innerText = desc;
-            const box = document.getElementById('evt-choices');
-            box.innerHTML = '';
-            choices.forEach(c => {
-                let btn = document.createElement('button');
-                btn.innerText = c.l;
-                btn.onclick = () => { c.f(); document.getElementById('modal-event').style.display='none'; updateUI(); };
-                box.appendChild(btn);
+        function useItem(item) {
+            if(run.backpack[item] > 0) {
+                run.backpack[item]--;
+                if(item === 'food') run.hp = Math.min(run.hp + 15, state.maxHp);
+                if(item === 'meds') run.hp = Math.min(run.hp + 40, state.maxHp);
+                logRun(`Used ${item}.`, "good");
+                updateRunUI();
+            }
+        }
+
+        function endExpedition() {
+            // Secure Loot
+            state.stash.scrap += run.loot.scrap;
+            
+            // Unpack Leftovers
+            state.stash.food += run.backpack.food;
+            state.stash.meds += run.backpack.meds;
+
+            // Secure Artifacts
+            run.loot.artifacts.forEach(id => {
+                if(!state.collection.includes(id)) state.collection.push(id);
             });
-            document.getElementById('modal-event').style.display = 'flex';
+
+            // Reset Run
+            run.active = false;
+            run.backpack = { food: 0, meds: 0 };
+            
+            // Return to Hub
+            document.getElementById('nav-bar').style.display = 'grid';
+            switchView('bunker');
+            alert(`Returned Safely!\nSecured: ${run.loot.scrap} Scrap.`);
+            saveGame();
         }
 
-        // --- SYSTEMS ---
-        function rest() {
-            state.days++;
-            let heal = state.upgrades.bed ? 20 : 10;
-            state.hp = Math.min(state.hp + heal, state.maxHp);
-            log("Rested.", "good");
+        function die() {
+            document.getElementById('death-screen').style.display = 'flex';
+        }
+
+        function respawn() {
+            document.getElementById('death-screen').style.display = 'none';
+            run.active = false;
+            run.backpack = { food: 0, meds: 0 }; // Lost forever
+            document.getElementById('nav-bar').style.display = 'grid';
+            switchView('bunker');
+            saveGame();
+        }
+
+        // --- UI HELPERS ---
+        function updateUI() {
+            // Stash
+            document.getElementById('stash-food').innerText = state.stash.food;
+            document.getElementById('stash-meds').innerText = state.stash.meds;
+            document.getElementById('total-food').innerText = state.stash.food;
+            document.getElementById('total-meds').innerText = state.stash.meds;
+            document.getElementById('scrap-display').innerText = state.stash.scrap;
+
+            // Prep Grid
+            let grid = document.getElementById('prep-grid');
+            grid.innerHTML = '';
+            // Render Food
+            for(let i=0; i<run.backpack.food; i++) grid.innerHTML += `<div class="inv-slot filled">🥩</div>`;
+            // Render Meds
+            for(let i=0; i<run.backpack.meds; i++) grid.innerHTML += `<div class="inv-slot filled">💉</div>`;
+            // Empty Slots
+            let used = run.backpack.food + run.backpack.meds;
+            for(let i=0; i<(5-used); i++) grid.innerHTML += `<div class="inv-slot"></div>`;
+
+            // Museum
+            let mList = document.getElementById('museum-list');
+            mList.innerHTML = '';
+            if(state.collection.length === 0) mList.innerHTML = '<div style="text-align:center; color:#555; padding:20px;">No Artifacts Found Yet.<br>Explore deeper miles.</div>';
+            state.collection.forEach(id => {
+                let art = ARTIFACTS.find(a => a.id === id);
+                mList.innerHTML += `
+                    <div class="artifact-row">
+                        <span>${art.icon} <b>${art.name}</b></span>
+                        <span style="color:var(--primary)">${art.desc}</span>
+                    </div>`;
+            });
+
+            saveGame();
+        }
+
+        function updateRunUI() {
+            document.getElementById('mile-display').innerText = run.mile;
+            document.getElementById('hp-display').innerText = run.hp;
+            document.getElementById('hp-bar').style.width = (run.hp / state.maxHp * 100) + "%";
+            
+            document.getElementById('pack-food').innerText = run.backpack.food;
+            document.getElementById('pack-meds').innerText = run.backpack.meds;
+
+            let lootStr = `${run.loot.scrap} Scrap`;
+            if(run.loot.artifacts.length > 0) lootStr += ` + ${run.loot.artifacts.length} Artifacts`;
+            document.getElementById('loot-display').innerText = lootStr;
+        }
+
+        function logRun(msg, type) {
+            let d = document.createElement('div');
+            d.className = `msg ${type||''}`;
+            d.innerText = msg;
+            document.getElementById('exp-log').prepend(d);
+        }
+
+        function switchView(id) {
+            document.querySelectorAll('.main-view').forEach(el => el.classList.remove('active'));
+            document.getElementById('view-'+id).classList.add('active');
+            
+            let badge = document.getElementById('mode-badge');
+            if(id === 'expedition') {
+                badge.className = 'mode-badge mode-danger';
+                badge.innerText = "WASTELAND (DANGER)";
+            } else {
+                badge.className = 'mode-badge mode-safe';
+                badge.innerText = "BUNKER (SAFE)";
+            }
             updateUI();
         }
 
-        function eat() {
-            if(state.inv.food > 0) {
-                state.inv.food--;
-                state.hp = Math.min(state.hp+15, state.maxHp);
-                floatText("+15 HP", "var(--primary)");
-                updateUI();
-            }
-        }
+        function hasArtifact(id) { return state.collection.includes(id); }
 
-        function buyUpgrade(id, cost) {
-            if(state.upgrades[id]) return log("Owned!", "bad");
-            if(state.scrap >= cost) {
-                state.scrap -= cost;
-                state.upgrades[id] = true;
-                log("Upgraded!", "good");
-                updateUI();
-            }
-        }
-
-        // --- UTILS ---
-        function setView(v, b) {
-            document.querySelectorAll('.view-container').forEach(e=>e.classList.remove('active'));
-            document.getElementById('view-'+v).classList.add('active');
-            document.querySelectorAll('.nav-btn').forEach(e=>e.classList.remove('active'));
-            b.classList.add('active');
-        }
-        function setLoc(l) { state.loc = l; document.querySelectorAll('.loc-btn').forEach(b=>b.classList.remove('active')); event.target.classList.add('active'); }
-        function setTheme(t) { document.body.className=t; state.theme=t; saveGame(); }
-        function addXp(n) { state.xp += n; if(state.xp>=state.maxXp) { state.xp=0; state.maxXp+=50; state.maxHp+=10; floatText("LEVEL UP!", "gold"); } }
-        function floatText(t, c) {
-            let el = document.createElement('div'); el.className='floater'; el.innerText=t; el.style.color=c;
-            document.body.appendChild(el); setTimeout(()=>el.remove(), 1200);
-        }
-        function log(m, t='') {
-            let d = document.createElement('div'); d.className=`msg ${t}`; d.innerText="> "+m;
-            document.getElementById('log-feed').prepend(d);
-        }
-        function updateUI() {
-            if(state.hp<=0) { 
-                alert("YOU DIED. SURVIVED " + state.days + " DAYS."); 
-                resetGame(); 
-                return; 
-            }
-            document.getElementById('hp-val').innerText = state.hp;
-            document.getElementById('hp-bar').style.width = (state.hp/state.maxHp*100)+'%';
-            document.getElementById('scrap-val').innerText = state.scrap;
-            document.getElementById('xp-bar').style.width = (state.xp/state.maxXp*100)+'%';
-            document.getElementById('day-val').innerText = state.days;
-            
-            document.getElementById('inv-food').innerText = state.inv.food;
-            document.getElementById('inv-meds').innerText = state.inv.meds;
-            document.getElementById('inv-parts').innerText = state.inv.parts;
-            document.getElementById('inv-wep').innerText = state.inv.weapon || "None";
-            document.getElementById('inv-dog').innerText = state.inv.dog ? "YES" : "NO";
-            
-            localStorage.setItem('wd_v10_save', JSON.stringify(state));
-        }
-        function resetGame() { localStorage.removeItem('wd_v10_save'); location.reload(); }
+        function saveGame() { localStorage.setItem('wd_v11_save', JSON.stringify(state)); }
+        function resetData() { localStorage.removeItem('wd_v11_save'); location.reload(); }
     </script>
 </body>
 </html>
